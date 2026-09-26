@@ -5,6 +5,7 @@ plugins {
     kotlin("plugin.serialization")
     id("com.google.devtools.ksp")
 }
+
 android {
     namespace = "io.omabit.tend"
     compileSdk = 36
@@ -16,15 +17,45 @@ android {
         versionName = "0.1.0-alpha01"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
-    buildTypes {
-        debug { applicationIdSuffix = ".dev"; versionNameSuffix = "-dev" }
-        release { isMinifyEnabled = true; proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro") }
+    val keyPath = providers.environmentVariable("TEND_KEYSTORE").orNull
+    val keyPasswordFile = providers.environmentVariable("TEND_KEY_PASSWORD_FILE").orNull
+    if (keyPath != null && keyPasswordFile != null) {
+        signingConfigs.create("alpha") {
+            storeFile = file(keyPath)
+            storePassword = file(keyPasswordFile).readText().trim()
+            keyAlias = "tend-alpha"
+            keyPassword = storePassword
+        }
     }
-    buildFeatures { compose = true; buildConfig = true }
-    compileOptions { sourceCompatibility = JavaVersion.VERSION_21; targetCompatibility = JavaVersion.VERSION_21 }
+    buildTypes {
+        debug {
+            applicationIdSuffix = ".dev"
+            versionNameSuffix = "-dev"
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            if (keyPath != null && keyPasswordFile != null)
+                signingConfig = signingConfigs.getByName("alpha")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
+    }
+    buildFeatures {
+        compose = true
+        buildConfig = true
+    }
+    compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_21
+        targetCompatibility = JavaVersion.VERSION_21
+    }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
 }
+
 kotlin { jvmToolchain(21) }
+
 dependencies {
     implementation(project(":shared"))
     implementation("androidx.activity:activity-compose:1.11.0")

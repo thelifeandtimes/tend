@@ -155,6 +155,11 @@ class Handler(BaseHTTPRequestHandler):
         return None
 
     def do_POST(self):
+        if self.path == "/__reset":
+            with fixture.lock:
+                fixture.states = {ship: [initial(ship)] for ship in ("~zod", "~nec")}
+                fixture.receipts.clear()
+            return self.send(204)
         if self.path != "/~/login":
             return self.send(404)
         code = parse_qs(self.rfile.read(int(self.headers.get("Content-Length", "0"))).decode()).get("password", [""])[0]
