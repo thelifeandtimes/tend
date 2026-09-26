@@ -4,4 +4,6 @@
 local.properties
 *.jks
 *.keystore
+*.p12
+*.pfx
 artifacts/
