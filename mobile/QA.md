@@ -89,8 +89,11 @@ exact published settings contract are in [TEND_THEMES.md](../docs/TEND_THEMES.md
 No Gall `.hoon` source, protocol, theme plugin, or Omarchy plugin was edited or
 tested as part of this change. Web source changes are confined to
 `desk/app/tend.html`; mobile work is in `mobile/`. Other worktrees remain untouched.
-The fake-rus mounted frontend was backed up and committed as a single HTML change
-through Dojo, recompiling the unchanged embedded agent. No live-network ship was
+Both fake-ship mounted frontends were backed up and committed as single HTML
+changes through Dojo, recompiling the unchanged embedded agent. Fake-wex reported
+that it was already syncing from fake-rus but kept serving its previous revision;
+the identical HTML was therefore overlaid directly for this frontend test, without
+changing its source-ship configuration. No live-network ship was
 deployed. Test-created settings entries were removed; pre-existing values were
 restored. Empty settings buckets can remain after entry deletion.
 
