@@ -6,7 +6,8 @@ import assert from 'node:assert/strict';
 import {createRequire} from 'node:module';
 const require=createRequire(import.meta.url);
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright');
-const output=path.resolve('mobile/artifacts/themes/web');
+const deployed=process.env.TEND_THEME_DEPLOYED === '1';
+const output=path.resolve(`mobile/artifacts/themes/${deployed ? 'web-deployed' : 'web'}`);
 await fs.mkdir(output,{recursive:true});
 const html=await fs.readFile('desk/app/tend.html','utf8');
 const palettes={
@@ -63,7 +64,7 @@ try {
     await page.goto(`${ship.url}/apps/tend`);
     await page.locator('#identity').filter({hasText:i?'~rus':'~wex'}).waitFor();
     await page.screenshot({path:`${output}/${i}-before.png`});
-    await page.route('**/apps/tend',route=>route.fulfill({status:200,contentType:'text/html',body:html}));
+    if (!deployed) await page.route('**/apps/tend',route=>route.fulfill({status:200,contentType:'text/html',body:html}));
     await page.reload();
     await page.locator('#identity').filter({hasText:i?'~rus':'~wex'}).waitFor();
     contexts.push({context,page});
@@ -81,7 +82,7 @@ try {
   assert.equal(await page.evaluate(()=>document.activeElement.id),'new-reminder-title');
   for(const mode of ['light','dark']) {
     await ships[0].put(0,JSON.stringify(profile(mode))); await waitBg(page,palettes[mode].background);
-    for(const width of [320,640,768,1024,1280,1440,1536]) for(const height of [568,960]) {
+    for(const width of (deployed ? [1440] : [320,640,768,1024,1280,1440,1536])) for(const height of (deployed ? [960] : [568,960])) {
       await page.setViewportSize({width,height});
       await page.waitForTimeout(200); // CSS hover/color transitions must settle for visual evidence.
       await page.screenshot({path:`${output}/${mode}-${width}x${height}.png`});
@@ -121,7 +122,7 @@ try {
   await ships[0].put(1,JSON.stringify(bridge)); await ships[0].put(0,null);
   await page.waitForFunction(()=>TendAppearance.label().includes('Talon bridge'));
   await ships[0].put(1,null); await waitBg(page,'#0c0c0d');
-  console.log('PASS: real settings watches, dark/light, opaque updateIds, draft preservation, invalid/cache fallback, local opt-out, bridge priority, deletion, ship isolation, 28 viewport screenshots.');
+  console.log(`PASS (${deployed ? 'ship-served frontend' : 'local frontend'}): real settings watches, dark/light, opaque updateIds, draft preservation, invalid/cache fallback, local opt-out, bridge priority, deletion, ship isolation and viewport screenshots.`);
 } finally {
   for(const ship of ships) await ship.restore();
   await browser?.close();

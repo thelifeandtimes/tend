@@ -13,6 +13,7 @@ APK = "tend-0.1.0-alpha02.apk"
 DOCS = {
     "/README.md": ROOT / "mobile/README.md",
     "/QA.md": ROOT / "mobile/QA.md",
+    "/QA-ALPHA01.md": ROOT / "mobile/QA-ALPHA01.md",
     "/DECISIONS.md": ROOT / "mobile/DECISIONS.md",
     "/THEMES.md": ROOT / "docs/TEND_THEMES.md",
 }

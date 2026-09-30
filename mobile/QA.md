@@ -53,6 +53,8 @@ from the emulator/fake-ship tests below.
   authentication and Tend requests reached the real running ships. Direct
   settings pokes observed Gall acknowledgements, and original entries were
   restored. No reminder writes occurred in this test.
+- The same live-sync checks then passed against **both ship-served frontends**,
+  without routing overrides, after the HTML-only deployment.
 - Light and dark screenshots at widths **320, 640, 768, 1024, 1280, 1440, 1536**,
   each at heights **568 and 960**, with no horizontal viewport overflow. Settings,
   reminder detail, calendar, and bridge-only peer captures are also included.

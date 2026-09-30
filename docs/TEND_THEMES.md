@@ -86,6 +86,8 @@ at 8081/loopback 12323, routes only the frontend document to the worktree versio
 and leaves all Eyre/settings/Tend requests against the actual ships. It never
 logs or stores their codes/cookies. Screenshots go under
 `mobile/artifacts/themes/web`.
+After deployment, set `TEND_THEME_DEPLOYED=1` to run against the actual ship-served
+HTML without route overrides; that smoke pass writes `web-deployed` evidence.
 
 Android, with one disposable API-36 emulator, from `mobile/`:
 
