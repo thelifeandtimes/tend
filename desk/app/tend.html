@@ -24,9 +24,13 @@
       --line: #2a2a2e;
       --accent: #c5ccd6;
       --accent-text: #0c0c0d;
+      --selection: #303238;
+      --selection-text: #ecece8;
+      --link: #8ba5c6;
       --accent-soft: color-mix(in srgb, var(--accent) 10%, transparent);
       --success: #7d9a7a;
       --danger: #c45c4a;
+      --danger-text: #ecece8;
       --danger-soft: color-mix(in srgb, var(--danger) 12%, transparent);
       --shadow-border: 0 0 0 1px rgba(255,255,255,.08);
       --shadow-border-hover: 0 0 0 1px rgba(255,255,255,.14);
@@ -41,6 +45,7 @@
       --radius-xl: 24px;
     }
     * { box-sizing: border-box; }
+    .theme-switching *, .theme-switching *::before, .theme-switching *::after { transition: none !important; }
     html, body { height: 100%; }
     html { background: var(--bg); -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
     body {
@@ -58,7 +63,7 @@
     h1 { margin: 0; font-size: 25px; font-style: italic; font-weight: 500; line-height: 1; letter-spacing: -.025em; }
     h2 { margin: 0; font-size: clamp(30px,3vw,42px); font-weight: 500; line-height: 1.02; letter-spacing: -.035em; }
     h3, .eyebrow { margin: 0; color: var(--subtle); font-family: var(--font-mono); font-size: 10px; font-weight: 600; letter-spacing: .11em; text-transform: uppercase; }
-    ::selection { color: var(--text); background: color-mix(in srgb, var(--accent) 30%, transparent); }
+    ::selection { color: var(--selection-text); background: var(--selection); }
     :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
     .icon { width: 18px; height: 18px; flex: 0 0 auto; display: block; fill: none; stroke: currentColor; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
     .brand-mark .icon { width: 20px; height: 20px; stroke-width: 2; }
@@ -89,7 +94,7 @@
     .button.primary:hover:not(:disabled) { color: var(--accent-text); background: color-mix(in srgb, var(--accent) 90%, white); box-shadow: none; }
     .button.quiet { background: transparent; box-shadow: none; color: var(--muted); }
     .button.tertiary { padding-inline: 12px; background: transparent; box-shadow: var(--shadow-border); color: var(--muted); }
-    .button.danger { color: var(--text); background: var(--danger); box-shadow: none; }
+    .button.danger { color: var(--danger-text); background: var(--danger); box-shadow: none; }
     .workspace { position: relative; min-height: 0; display: grid; grid-template-columns: var(--nav-width) minmax(0,1fr); overflow: hidden; }
     .nav, .tray, .center { min-height: 0; }
     .nav { border-right: 1px solid var(--line); padding: 24px 16px; overflow-y: auto; background: var(--bg); scrollbar-color: var(--line) transparent; }
@@ -364,6 +369,167 @@
   <div class="notice" id="notice" role="status" aria-live="polite"></div>
   <div class="control-popover-layer" id="control-popover-layer" aria-live="polite"></div>
 
+  <script>
+    // BEGIN SHIP APPEARANCE — deliberately independent of reminder rendering.
+    const TendAppearance = (() => {
+      const hex = value => typeof value === "string" && /^#[\da-f]{6}$/i.test(value) ? value.toLowerCase() : null;
+      const object = value => value && typeof value === "object" && !Array.isArray(value);
+      const mix = (a,b,t) => "#" + [1,3,5].map(i => Math.round(parseInt(a.slice(i,i+2),16)*(1-t)+parseInt(b.slice(i,i+2),16)*t).toString(16).padStart(2,"0")).join("");
+      const luminance = color => [1,3,5].map(i => parseInt(color.slice(i,i+2),16)/255).map(v => v <= .04045 ? v/12.92 : ((v+.055)/1.055)**2.4).reduce((sum,v,i) => sum+v*[.2126,.7152,.0722][i],0);
+      const ink = bg => luminance(bg) > .179 ? "#000000" : "#ffffff";
+      const name = value => typeof value === "string" ? value.slice(0,120).replace(/[\u0000-\u001f]/g,"") || "Ship theme" : "Ship theme";
+      const colorNames = "accent selection muted background dark_background darker_background lighter_background foreground dark_foreground light_foreground bright_foreground red yellow orange green cyan blue magenta brown bright_red bright_yellow bright_green bright_cyan bright_blue bright_magenta".split(" ");
+      function palette(colors) {
+        if (!object(colors) || !["dark","light"].includes(colors.mode) || !hex(colors.background) || !hex(colors.foreground)) throw Error("Invalid palette");
+        const bg = hex(colors.background), fg = hex(colors.foreground), accent = hex(colors.accent) || hex(colors.blue) || fg;
+        const result = {mode:colors.mode, background:bg, foreground:fg, accent,
+          dark_background:mix(bg,fg,.035), darker_background:bg, lighter_background:mix(bg,fg,.07),
+          selection:mix(bg,accent,.22), muted:mix(bg,fg,.65), dark_foreground:mix(bg,fg,.65),
+          light_foreground:fg, bright_foreground:fg, red:"#c45c4a", green:"#7d9a7a", blue:accent};
+        for (const key of colorNames) if (hex(colors[key])) result[key] = hex(colors[key]);
+        return result;
+      }
+      function entry(body,bucket,key) {
+        if (!object(body) || !object(body.desk || body)) throw Error("Invalid settings desk");
+        if ((body.desk || body)[bucket] != null && !object((body.desk || body)[bucket])) throw Error("Invalid settings bucket");
+        const value = (body.desk || body)[bucket]?.[key];
+        if (value == null) return null;
+        if (JSON.stringify(value).length > 262144) throw Error("Theme exceeds size limit");
+        return typeof value === "string" ? JSON.parse(value) : value;
+      }
+      function profile(body) {
+        const value = entry(body,"appearance","current");
+        if (value == null) return null;
+        if (!object(value) || value.schemaVersion !== 1) throw Error("Unsupported appearance schema");
+        return {name:name(value.theme), source:"Omarchy", colors:palette(value.colors)};
+      }
+      function bridge(body) {
+        const value = entry(body,"ui-prefs","themes");
+        if (value == null) return null;
+        if (!object(value) || !Array.isArray(value.themes)) throw Error("Invalid Talon themes");
+        const theme = value.themes.find(t => object(t) && t.id === "omarchy-urbit-theme");
+        if (!theme) return null;
+        if (typeof theme.dark !== "boolean") throw Error("Invalid theme mode");
+        const colors = {mode:theme.dark ? "dark" : "light", background:theme.background,
+          foreground:hex(theme.text) || (theme.dark ? "#ecece8" : "#202024")};
+        for (const [key,source] of Object.entries({accent:"primary",blue:"link",green:"tertiary",red:"error",muted:"muted",selection:"selection",dark_background:"surface",lighter_background:"raised"})) if (hex(theme[source])) colors[key] = hex(theme[source]);
+        return {name:name(theme.name),source:"Talon bridge",colors:palette(colors)};
+      }
+      const css = c => ({"bg":c.background,"surface":c.dark_background,"surface-solid":c.dark_background,
+        "surface-soft":c.lighter_background,"text":c.foreground,"muted":c.muted,"subtle":c.dark_foreground,
+        "line":mix(c.background,c.foreground,.18),"accent":c.accent,"accent-text":ink(c.accent),
+        "selection":c.selection,"selection-text":ink(c.selection),"success":c.green,"danger":c.red,"danger-text":ink(c.red),"link":c.blue,
+        "shadow-border":`0 0 0 1px ${mix(c.background,c.foreground,.12)}`,
+        "shadow-border-hover":`0 0 0 1px ${mix(c.background,c.foreground,.22)}`,
+        "shadow":`0 24px 72px rgba(0,0,0,${c.mode === "light" ? ".16" : ".48"})`});
+      let current = null;
+      let applied = "", switchFrame;
+      function label() {
+        if (!current || !current.follow) return "Tend default · this browser";
+        return current.theme ? `${current.theme.name} · ${current.theme.colors.mode} · ${current.theme.source}` : "Tend default · no ship theme";
+      }
+      function apply() {
+        const root = document.documentElement, theme = current?.follow && current.theme;
+        document.querySelectorAll("[data-appearance-status]").forEach(node => { node.textContent = label(); });
+        const signature = JSON.stringify(theme?.colors || null);
+        if (signature === applied) return;
+        applied = signature;
+        root.classList.add("theme-switching"); cancelAnimationFrame(switchFrame);
+        const keys = ["bg","surface","surface-solid","surface-soft","text","muted","subtle","line","accent","accent-text","selection","selection-text","success","danger","danger-text","link","shadow-border","shadow-border-hover","shadow"];
+        for (const key of keys) root.style.removeProperty(`--${key}`);
+        for (const key of colorNames) root.style.removeProperty(`--omarchy-${key.replaceAll("_","-")}`);
+        root.style.colorScheme = theme ? theme.colors.mode : "dark";
+        root.dataset.themeMode = theme ? theme.colors.mode : "dark";
+        if (theme) {
+          for (const [key,value] of Object.entries(css(theme.colors))) root.style.setProperty(`--${key}`,value);
+          for (const key of colorNames) if (theme.colors[key]) root.style.setProperty(`--omarchy-${key.replaceAll("_","-")}`,theme.colors[key]);
+        }
+        switchFrame=requestAnimationFrame(() => { switchFrame=requestAnimationFrame(() => root.classList.remove("theme-switching")); });
+      }
+      function save() { try { localStorage.setItem(current.key,JSON.stringify({follow:current.follow,theme:current.theme})); } catch (_) {} }
+      async function read(desk, signal) {
+        const response = await fetch(`/~/scry/settings/desk/${desk}.json`,{credentials:"same-origin",signal});
+        if (response.status === 404) return {};
+        if (!response.ok) throw Error("Settings unavailable");
+        const reader = response.body.getReader(), chunks = []; let size = 0;
+        try {
+          while (true) { const {done,value} = await reader.read(); if (done) break; size += value.length; if (size > 1048576) throw Error("Settings exceeds size limit"); chunks.push(value); }
+        } finally { reader.cancel().catch(() => {}); }
+        const bytes = new Uint8Array(size); let offset=0;
+        for (const chunk of chunks) { bytes.set(chunk,offset); offset+=chunk.length; }
+        return JSON.parse(new TextDecoder().decode(bytes));
+      }
+      async function refresh(session) {
+        session.dirty = true;
+        if (session.refreshing || session.stopped) return;
+        session.refreshing = true;
+        try {
+          while (session.dirty && !session.stopped) {
+            session.dirty = false;
+            const timeout = setTimeout(() => session.abort.abort(),15000);
+            try {
+              const theme = profile(await read("omarchy-urbit-theme",session.abort.signal)) || bridge(await read("talon",session.abort.signal));
+              if (current === session && !session.stopped) { session.theme = theme; save(); apply(); }
+            } catch (_) { /* Keep the last good palette on malformed data or network failure. */ }
+            finally { clearTimeout(timeout); if (!session.stopped) session.abort = new AbortController(); }
+          }
+        } finally { session.refreshing = false; }
+      }
+      function watch(session,desk) {
+        let source, timer, ackTimer, url, commandId = 1, backoff = 1000, stopped = false;
+        const commands = (target, values, keepalive=false) => fetch(target,{method:"PUT",credentials:"same-origin",headers:{"Content-Type":"application/json"},body:JSON.stringify(values),keepalive}).then(r => { if (!r.ok) throw Error("Settings channel unavailable"); });
+        function close() {
+          source?.close(); source=null; clearTimeout(ackTimer);
+          if (url) { commands(url,[{id:++commandId,action:"delete"}],true).catch(() => {}); url=null; }
+        }
+        function retry() {
+          close(); clearTimeout(timer);
+          if (!stopped && !session.stopped) { timer=setTimeout(connect,backoff); backoff=Math.min(backoff*2,30000); }
+        }
+        async function connect() {
+          if (stopped || session.stopped) return;
+          const channel = `/~/channel/tend-theme-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+          url=channel; commandId=1;
+          try {
+            ackTimer=setTimeout(retry,20000);
+            await commands(channel,[{id:1,action:"subscribe",ship:session.ship.replace(/^~/,""),app:"settings",path:`/desk/${desk}`}]);
+            if (stopped || session.stopped || url !== channel) { commands(channel,[{id:2,action:"delete"}],true).catch(() => {}); return; }
+            source=new EventSource(channel);
+            source.onerror=retry;
+            source.onmessage=event => {
+              try {
+                const message=JSON.parse(event.data);
+                if (message.err || message.response === "quit") return retry();
+                if (message.response === "subscribe") { clearTimeout(ackTimer); backoff=1000; refresh(session); }
+                if (message.json != null) refresh(session);
+                if (event.lastEventId) commands(channel,[{id:++commandId,action:"ack","event-id":Number(event.lastEventId)}]).catch(retry);
+              } catch (_) { retry(); }
+            };
+          } catch (_) { if (url === channel) retry(); }
+        }
+        connect();
+        return () => { stopped=true; clearTimeout(timer); close(); };
+      }
+      function selectShip(ship) {
+        if (current?.ship === ship && !current.stopped) return;
+        stop();
+        const session={ship,key:`tend.appearance.v1:${location.origin}:${ship}`,theme:null,follow:true,abort:new AbortController(),stopped:false};
+        try {
+          const cache=JSON.parse(localStorage.getItem(session.key));
+          if (cache) { session.follow=cache.follow !== false; if (cache.theme) session.theme={name:name(cache.theme.name),source:cache.theme.source === "Talon bridge" ? "Talon bridge" : "Omarchy",colors:palette(cache.theme.colors)}; }
+        } catch (_) {}
+        current=session; apply();
+        session.stops=[watch(session,"omarchy-urbit-theme"),watch(session,"talon")];
+        session.poll=setInterval(() => refresh(session),30000);
+      }
+      function stop() { if (current) { current.stopped=true; current.abort.abort(); current.stops?.forEach(fn => fn()); clearInterval(current.poll); } }
+      function follow(value) { if (current) { current.follow=value; save(); apply(); } }
+      window.addEventListener("pagehide",stop);
+      window.addEventListener("pageshow",() => { if (current?.stopped) selectShip(current.ship); });
+      return {selectShip,follow,label,isFollowing:() => current?.follow !== false,profile,bridge,palette,css};
+    })();
+    // END SHIP APPEARANCE
+  </script>
   <script>
     (() => {
       "use strict";
@@ -886,6 +1052,7 @@
           const snapshot = snapshotEnvelope.snapshot || {};
           if (snapshot["protocol-version"] !== 2) throw new Error("This Tend client requires protocol version 2.");
           state.ship = normalizeShip(ship);
+          TendAppearance.selectShip(state.ship);
           state.lists = Array.isArray(snapshot.lists) ? snapshot.lists : [];
           state.preferences = snapshot.preferences || {};
           state.accesses = Array.isArray(accessEnvelope.accesses) ? accessEnvelope.accesses : [];
@@ -1160,6 +1327,7 @@
           const invitations = state.invitations.map((invite,index) => `<div class="invitation-card"><div><strong>${escapeHtml(invite.title || "Shared list")}</strong><div class="muted tiny">from ${escapeHtml(invite.host)}</div></div><div class="row" style="gap:7px;margin-top:9px"><button class="button primary" data-accept-invite="${index}">Accept</button><button class="button" data-decline-invite="${index}">Decline</button></div></div>`).join("");
           tray.innerHTML = `<div class="tray-head"><div><div class="eyebrow">Settings</div><div class="status-line"><span class="dot ${state.online ? "online" : ""}"></span><span>${escapeHtml(state.ship)}</span></div></div><button class="icon-button" data-close-settings aria-label="Close settings">${icon("close")}</button></div>
             <div class="form-section"><span class="eyebrow">Account</span><button class="button" data-switch-ship>Sign in as another ship</button><p class="muted tiny">The web app uses this browser's Urbit session.</p></div>
+            <div class="divider"></div><div class="form-section"><span class="eyebrow">Appearance</span><label class="label">Colors and mode<select class="select" id="appearance-mode"><option value="ship" ${TendAppearance.isFollowing() ? "selected" : ""}>Follow ship theme</option><option value="default" ${!TendAppearance.isFollowing() ? "selected" : ""}>Tend default</option></select></label><p class="muted tiny" data-appearance-status>${escapeHtml(TendAppearance.label())}</p><p class="muted tiny">Saved for this ship in this browser. Fonts and layout stay unchanged.</p></div>
             ${invitations ? `<div class="divider"></div><div class="form-section"><span class="eyebrow">Open invitations</span>${invitations}</div>` : ""}<div class="divider"></div>
             <form class="form-section" id="defaults-form"><span class="eyebrow">Reminder defaults</span><label class="label">Badge count<select class="select" name="badge"><option value="today" ${badge === "today" ? "selected" : ""}>Due today</option><option value="scheduled" ${badge === "scheduled" ? "selected" : ""}>Scheduled</option><option value="all" ${badge === "all" ? "selected" : ""}>All open</option></select></label><label class="label">All-day alert time<input class="field" name="alert" type="time" value="${minutesToTime(Number(state.preferences["all-day-alert-minute"] || 0))}"></label><label class="check-row"><input class="check" name="overdue" type="checkbox" ${state.preferences["all-day-overdue"] !== false ? "checked" : ""}> Keep all-day reminders overdue</label><button class="button primary" type="submit">Save defaults</button></form>`;
           enhanceControls(tray);
@@ -1377,6 +1545,7 @@
         if (event.target.matches(".detail-text")) { updateDraftField(event.target); scheduleDetailSave(); }
       });
       document.addEventListener("change", async event => {
+        if (event.target.id === "appearance-mode") { TendAppearance.follow(event.target.value === "ship"); return; }
         if (event.target.id === "tag-filter") { state.tag = event.target.value; renderMain(); return; }
         if (event.target.id === "sort") { state.sort = event.target.value; renderMain(); return; }
         if (event.target.id === "quick-list") { state.composerDraft.listId = Number(event.target.value); state.composerDraft.assignee = null; renderMain(); return; }

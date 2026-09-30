@@ -1,5 +1,14 @@
 # Native client decisions
 
+Update, 2026-09-29: the `codex/tend-theme` worktree adds **colors and light/dark
+mode only** to Android and the browser, using the published `omarchy-urbit-theme`
+contract. Default to Follow ship theme; opt out per account/device. Prefer the
+full profile, then the stable Talon bridge; cache last-good palettes offline.
+Gall logic and both plugins remain frozen. Test directly on fake-wex:8082 and
+fake-rus:8081, restoring their settings afterward. No plugin testing requested.
+This supersedes the original browser freeze and deferred theme-sync decision
+below. See [the implemented contract](../docs/TEND_THEMES.md).
+
 Approved direction, 2026-09-26:
 
 - Android first, iOS later; native Kotlin Multiplatform/Compose interpretation of

@@ -2,9 +2,10 @@
 
 Read `README.md`, `DECISIONS.md`, and `QA.md` before changing this client.
 
-- Keep this workstream in its own `codex/tend-mobile` worktree. Do not merge other
+- Keep this workstream in its own dedicated worktree. Do not merge other
   Omabit workstreams incidentally.
-- Gall (`desk/`), the browser client, and `omarchy-plugin/` are frozen. Client
+- Gall logic and `omarchy-plugin/` are frozen. The theme workstream may edit the
+  browser frontend (`desk/app/tend.html`) alongside mobile. Client
   limitations are not authorization to change the server protocol.
 - Shared protocol/state/UI belong in `shared/`; Android storage, lifecycle, and
   network adapters belong in `androidApp/`. Keep notifications out of this alpha.

@@ -2,14 +2,15 @@
 
 Android-first native Tend client. Kotlin Multiplatform/Compose owns protocol,
 state and screens; Android provides Room storage and Keystore-backed sessions.
-Gall, the web application and the Omarchy plugin are frozen and unchanged.
+Gall logic and the Omarchy plugin are frozen and unchanged. The theme workstream
+also updates the browser frontend to consume the same published settings.
 
 Initial target: GrapheneOS Pixel 8. Minimum Android 8; compile/target SDK 36.
 No Google Play Services dependency, analytics, or notification service.
 
 ## Install the alpha
 
-1. Copy `artifacts/tend-0.1.0-alpha01.apk` to your phone, or download it from the
+1. Copy `artifacts/tend-0.1.0-alpha02.apk` to your phone, or download it from the
    build handoff. Do not install the `androidTest` package.
 2. Open it in Files. Temporarily allow that source to install apps if Android
    asks, install Tend, then turn that permission back off.
@@ -38,12 +39,14 @@ Uninstalling does remove this device's sessions, cache, and unsent drafts.
   occurrences and animates list removal/reflow.
 - Offline reading, reconnect/backoff, revision-conflict protection, persistent
   in-flight operation tracking, and drafts that survive incoming updates/rotation.
+- Automatic ship colors/light-dark mode from `%settings`, full Omarchy profile
+  with Talon bridge fallback, cached per ship. **Accounts → Appearance** offers
+  a local opt-out. Theme changes preserve open drafts. Fonts/layout stay native.
 
 This is an **alpha**, not full desktop feature parity. Notifications/background
 refresh, offline mutations, cross-list transfer, bulk editing, drag ordering,
-advanced recurrence-rule authoring, and native theme synchronization are deferred.
-The full proposed Omarchy palette vocabulary is present in `Theme.kt`; the future
-shared `%settings` extension is not assumed or written to by this build.
+advanced recurrence-rule authoring are deferred. The clients only read appearance
+settings; they never publish a competing theme. See [theme contract and tests](../docs/TEND_THEMES.md).
 
 ## Development loop
 

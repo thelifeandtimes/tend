@@ -3,6 +3,7 @@ package io.omabit.tend
 import kotlin.random.Random
 import kotlin.time.Clock
 import kotlinx.coroutines.*
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -47,6 +48,7 @@ class TendRepository(
     private val canonicalResults = mutableMapOf<Pair<String, String>, JsonObject>()
     private val writeLock = Mutex()
     private var sync: Job? = null
+    private var appearanceSync: Job? = null
     private var foreground = true
     private var generation = 0L
 
@@ -99,6 +101,7 @@ class TendRepository(
                 data.copy(
                     pending = previous?.pending.orEmpty(),
                     settings = previous?.settings ?: data.settings,
+                    appearance = previous?.appearance ?: data.appearance,
                 ),
             )
             credentials.write(AccountVault(all, account.id))
@@ -113,6 +116,7 @@ class TendRepository(
         writeLock.withLock {
             generation++
             sync?.cancelAndJoin()
+            appearanceSync?.cancelAndJoin()
             mutable.update {
                 it.copy(
                     active = account,
@@ -133,6 +137,7 @@ class TendRepository(
             if (state.value.active?.id == account.id) {
                 generation++
                 sync?.cancelAndJoin()
+                appearanceSync?.cancelAndJoin()
                 mutable.update {
                     it.copy(active = null, data = TendState(), connection = Connection.OFFLINE)
                 }
@@ -150,6 +155,7 @@ class TendRepository(
         if (value) startSync()
         else {
             sync?.cancel()
+            appearanceSync?.cancel()
             mutable.update { it.copy(connection = Connection.OFFLINE) }
         }
     }
@@ -157,11 +163,14 @@ class TendRepository(
     fun reconnect() {
         sync?.cancel()
         sync = null
+        appearanceSync?.cancel()
+        appearanceSync = null
         startSync()
     }
 
     private fun startSync() {
         val account = state.value.active ?: return
+        if (foreground && appearanceSync?.isActive != true) startAppearanceSync(account)
         if (!foreground || sync?.isActive == true) return
         val token = generation
         sync =
@@ -243,6 +252,78 @@ class TendRepository(
                     canonicalResults.remove(canonicalResults.keys.first())
             }
         }
+
+    suspend fun followShipTheme(follow: Boolean) {
+        val account = state.value.active ?: return
+        updateAppearance(account, generation) { it.copy(followShip = follow) }
+    }
+
+    private suspend fun updateAppearance(
+        account: ShipAccount,
+        token: Long,
+        change: (AppearanceState) -> AppearanceState,
+    ) =
+        dataLock.withLock {
+            if (token != generation || state.value.active?.id != account.id) return@withLock
+            val current = state.value.data
+            val updated = current.copy(appearance = change(current.appearance))
+            if (updated == current) return@withLock
+            cache.write(account.id, updated)
+            mutable.update { it.copy(data = updated) }
+        }
+
+    private fun startAppearanceSync(account: ShipAccount) {
+        val token = generation
+        appearanceSync =
+            scope.launch {
+                // Independent from Tend sync: missing/old %settings cannot disable reminders.
+                val dirty = Channel<Unit>(Channel.CONFLATED)
+                for (desk in listOf("omarchy-urbit-theme", "talon")) launch {
+                    var backoff = 1000L
+                    while (isActive && token == generation) {
+                        try {
+                            api.subscribe(
+                                account,
+                                operationId(),
+                                app = "settings",
+                                path = "/desk/$desk",
+                                onReady = {
+                                    backoff = 1000
+                                    dirty.trySend(Unit)
+                                },
+                            ) {
+                                dirty.trySend(Unit)
+                            }
+                        } catch (e: CancellationException) {
+                            throw e
+                        } catch (_: Exception) {
+                            /* Retain the last valid palette while reconnecting. */
+                        }
+                        delay(backoff)
+                        backoff = (backoff * 2).coerceAtMost(30000)
+                    }
+                }
+                // Periodic reconciliation also covers old settings agents without these watches.
+                launch {
+                    while (isActive) {
+                        delay(30000)
+                        dirty.trySend(Unit)
+                    }
+                }
+                for (ignored in dirty) {
+                    try {
+                        val theme =
+                            profileTheme(api.settingsDesk(account, "omarchy-urbit-theme"))
+                                ?: bridgeTheme(api.settingsDesk(account, "talon"))
+                        updateAppearance(account, token) { it.copy(shipTheme = theme) }
+                    } catch (e: CancellationException) {
+                        throw e
+                    } catch (_: Exception) {
+                        /* Invalid profiles and transient failures keep last-good. */
+                    }
+                }
+            }
+    }
 
     private suspend fun pending(
         account: ShipAccount,

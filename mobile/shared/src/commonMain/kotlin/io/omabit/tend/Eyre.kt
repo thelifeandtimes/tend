@@ -41,7 +41,7 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
         const val MAX_BYTES = 32L * 1024 * 1024
     }
 
-    private suspend fun body(response: HttpResponse): String {
+    private suspend fun body(response: HttpResponse, limit: Long = MAX_BYTES): String {
         if (response.status.value in listOf(401, 403))
             throw AuthenticationException(
                 "Your ship session expired. Sign in again with the current +code."
@@ -50,11 +50,11 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
             error(
                 "Ship request failed (HTTP ${response.status.value}). Check the URL and that %tend is running."
             )
-        require((response.contentLength() ?: 0) <= MAX_BYTES) {
+        require((response.contentLength() ?: 0) <= limit) {
             "Ship response exceeds the safety limit"
         }
-        val bytes = response.bodyAsChannel().readRemaining(MAX_BYTES + 1).readByteArray()
-        require(bytes.size <= MAX_BYTES) { "Ship response exceeds the safety limit" }
+        val bytes = response.bodyAsChannel().readRemaining(limit + 1).readByteArray()
+        require(bytes.size <= limit) { "Ship response exceeds the safety limit" }
         return bytes.decodeToString()
     }
 
@@ -94,6 +94,16 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
             )
         )
 
+    suspend fun settingsDesk(account: ShipAccount, desk: String): JsonElement {
+        require(desk in setOf("omarchy-urbit-theme", "talon"))
+        val response =
+            http.get("${account.url}/~/scry/settings/desk/$desk.json") {
+                header(HttpHeaders.Cookie, account.cookie)
+            }
+        if (response.status.value == 404) return JsonObject(emptyMap())
+        return Wire.parseToJsonElement(body(response, 1024 * 1024))
+    }
+
     suspend fun receipt(account: ShipAccount, operationId: String): JsonObject? {
         val response =
             http.get("${account.url}/~/scry/tend/receipt/$operationId.json") {
@@ -116,8 +126,12 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
     suspend fun subscribe(
         account: ShipAccount,
         channel: String,
+        app: String = "tend",
+        path: String = "/all",
+        onReady: suspend () -> Unit = {},
         onFact: suspend (JsonObject) -> Unit,
     ) {
+        var commandId = 1
         commands(
             account,
             channel,
@@ -127,8 +141,8 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
                         put("id", 1)
                         put("action", "subscribe")
                         put("ship", account.ship.removePrefix("~"))
-                        put("app", "tend")
-                        put("path", "/all")
+                        put("app", app)
+                        put("path", path)
                     }
                 )
             },
@@ -158,6 +172,8 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
                                     error("Ship subscription refused")
                                 if (message["response"]?.jsonPrimitive?.content == "quit")
                                     error("Ship subscription closed")
+                                if (message["response"]?.jsonPrimitive?.content == "subscribe")
+                                    onReady()
                                 message["json"]?.let { if (it is JsonObject) onFact(it) }
                                 eventId?.let { id ->
                                     commands(
@@ -166,6 +182,7 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
                                         buildJsonArray {
                                             add(
                                                 buildJsonObject {
+                                                    put("id", ++commandId)
                                                     put("action", "ack")
                                                     put("event-id", id)
                                                 }
@@ -195,7 +212,7 @@ class Eyre(private val http: HttpClient, private val allowLocal: Boolean = false
                             buildJsonArray {
                                 add(
                                     buildJsonObject {
-                                        put("id", 2)
+                                        put("id", ++commandId)
                                         put("action", "delete")
                                     }
                                 )

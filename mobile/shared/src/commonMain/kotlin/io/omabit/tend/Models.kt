@@ -127,6 +127,7 @@ data class TendState(
     val invitations: List<Invitation> = emptyList(),
     val preferences: JsonObject = JsonObject(emptyMap()),
     val settings: JsonObject = JsonObject(emptyMap()),
+    val appearance: AppearanceState = AppearanceState(),
     val pending: List<PendingOperation> = emptyList(),
     val syncedAt: Long = 0,
     val protocol: Int = 2,

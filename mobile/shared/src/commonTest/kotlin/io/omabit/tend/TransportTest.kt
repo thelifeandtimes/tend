@@ -13,6 +13,82 @@ class TransportTest {
         ShipAccount("~zod@https://ship.test", "~zod", "https://ship.test", "urbauth-~zod=session")
 
     @Test
+    fun settingsSubscribeAcknowledgesBeforeInitialScryAndUsesIndependentDesk() = runTest {
+        val order = mutableListOf<String>()
+        val commands = mutableListOf<JsonObject>()
+        val client =
+            HttpClient(
+                MockEngine { request ->
+                    assertEquals(account.cookie, request.headers[HttpHeaders.Cookie])
+                    when {
+                        request.method == HttpMethod.Put -> {
+                            val command =
+                                Wire.parseToJsonElement(
+                                        (request.body as OutgoingContent.ByteArrayContent)
+                                            .bytes()
+                                            .decodeToString()
+                                    )
+                                    .jsonArray
+                                    .single()
+                                    .jsonObject
+                            commands += command
+                            respond("", HttpStatusCode.NoContent)
+                        }
+                        request.url.encodedPath.contains("/scry/") -> {
+                            order += "scry"
+                            respond("""{"desk":{}}""")
+                        }
+                        else ->
+                            respond(
+                                "id: 1\ndata: {\"id\":1,\"response\":\"subscribe\",\"ok\":\"ok\"}\n\nid: 2\ndata: {\"id\":1,\"response\":\"diff\",\"json\":{\"put-entry\":{}}}\n\n",
+                                headers = headersOf(HttpHeaders.ContentType, "text/event-stream"),
+                            )
+                    }
+                }
+            )
+        try {
+            val api = Eyre(client)
+            assertFails {
+                api.subscribe(
+                    account,
+                    "theme-channel",
+                    app = "settings",
+                    path = "/desk/omarchy-urbit-theme",
+                    onReady = {
+                        order += "ready"
+                        api.settingsDesk(account, "omarchy-urbit-theme")
+                    },
+                ) {
+                    order += "invalidated"
+                }
+            } // Finite fixture stream ends, triggering reconnection in the repository.
+            assertEquals(listOf("ready", "scry", "invalidated"), order)
+            assertEquals("settings", commands.first()["app"]?.jsonPrimitive?.content)
+            assertEquals(
+                "/desk/omarchy-urbit-theme",
+                commands.first()["path"]?.jsonPrimitive?.content,
+            )
+            assertEquals(
+                listOf("subscribe", "ack", "ack", "delete"),
+                commands.map { it["action"]!!.jsonPrimitive.content },
+            )
+            assertEquals(listOf(1, 2, 3, 4), commands.map { it["id"]!!.jsonPrimitive.int })
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
+    fun missingSettingsIsNotAFailedTendConnection() = runTest {
+        val client = HttpClient(MockEngine { respond("", HttpStatusCode.NotFound) })
+        try {
+            assertNull(profileTheme(Eyre(client).settingsDesk(account, "omarchy-urbit-theme")))
+        } finally {
+            client.close()
+        }
+    }
+
+    @Test
     fun loginStripsLeadingPlusAndValidatesShipAndProtocol() = runTest {
         val requests = mutableListOf<String>()
         val client =

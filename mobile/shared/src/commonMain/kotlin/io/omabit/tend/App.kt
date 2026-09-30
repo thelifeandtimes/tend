@@ -16,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.semantics.*
@@ -31,7 +30,7 @@ import kotlinx.serialization.json.*
 @Composable
 fun TendApp(repository: TendRepository) {
     val client by repository.state.collectAsState()
-    TendTheme {
+    TendTheme(client.data.appearance.palette) {
         Surface(Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
             var addingAccount by remember { mutableStateOf(false) }
             val snack = remember { SnackbarHostState() }
@@ -737,7 +736,8 @@ private fun ConnectionLine(client: ClientState, list: TaskList?) {
             Modifier.size(6.dp)
                 .clip(CircleShape)
                 .background(
-                    if (live) Color(0xff7d9a7a) else MaterialTheme.colorScheme.onSurfaceVariant
+                    if (live) LocalTendPalette.current.color("green")
+                    else MaterialTheme.colorScheme.onSurfaceVariant
                 )
         )
         Text(
@@ -949,7 +949,8 @@ private fun AccountSheet(
     onAdd: () -> Unit,
 ) {
     var remove by remember { mutableStateOf<ShipAccount?>(null) }
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, properties = tendSheetProperties()) {
+        TendSheetSystemBars()
         Column(
             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
@@ -1008,6 +1009,28 @@ private fun AccountSheet(
                 Spacer(Modifier.width(8.dp))
                 Text("Connect another ship")
             }
+            HorizontalDivider()
+            Eyebrow("Appearance")
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                Column(Modifier.weight(1f)) {
+                    Text("Follow ship theme")
+                    Text(
+                        client.data.appearance.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = client.data.appearance.followShip,
+                    onCheckedChange = { follow -> repo.launch { followShipTheme(follow) } },
+                    modifier = Modifier.semantics { contentDescription = "Follow ship theme" },
+                )
+            }
+            Text(
+                "Colors and light/dark mode only. This choice is saved separately for each ship on this device.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
             HorizontalDivider()
             Eyebrow("Connection & privacy")
             ConnectionLine(client, null)

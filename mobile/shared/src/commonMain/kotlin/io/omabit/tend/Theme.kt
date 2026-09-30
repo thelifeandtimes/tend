@@ -1,7 +1,11 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3Api::class)
+
 package io.omabit.tend
 
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
@@ -49,18 +53,8 @@ data class OmarchyPalette(
                 "bright_magenta" to "#d2b5d7",
             )
 
-        fun fromJson(value: JsonObject): OmarchyPalette {
-            val colors =
-                defaultColors +
-                    value
-                        .mapNotNull { (key, v) ->
-                            v.jsonPrimitive.contentOrNull
-                                ?.takeIf { key in defaultColors && parseColor(it) != null }
-                                ?.let { key to it }
-                        }
-                        .toMap()
-            return OmarchyPalette(value["mode"]?.jsonPrimitive?.contentOrNull ?: "dark", colors)
-        }
+        fun fromJson(value: JsonObject): OmarchyPalette =
+            normalizedPalette((value["mode"] as? JsonPrimitive)?.contentOrNull ?: "dark", value)
     }
 }
 
@@ -74,16 +68,21 @@ fun parseColor(value: String?): Color? =
 @Composable
 fun TendTheme(palette: OmarchyPalette = OmarchyPalette(), content: @Composable () -> Unit) {
     val c = palette::color
+    val base = if (palette.mode == "light") lightColorScheme() else darkColorScheme()
     val scheme =
-        darkColorScheme(
+        base.copy(
             primary = c("accent"),
-            onPrimary = c("background"),
+            onPrimary = parseColor(inkFor(palette.colors.getValue("accent")))!!,
             primaryContainer = c("selection"),
-            onPrimaryContainer = c("foreground"),
+            onPrimaryContainer = parseColor(inkFor(palette.colors.getValue("selection")))!!,
             secondary = c("muted"),
-            onSecondary = c("background"),
+            onSecondary = parseColor(inkFor(palette.colors.getValue("muted")))!!,
             secondaryContainer = c("selection"),
-            onSecondaryContainer = c("foreground"),
+            onSecondaryContainer = parseColor(inkFor(palette.colors.getValue("selection")))!!,
+            tertiary = c("blue"),
+            onTertiary = parseColor(inkFor(palette.colors.getValue("blue")))!!,
+            tertiaryContainer = c("selection"),
+            onTertiaryContainer = parseColor(inkFor(palette.colors.getValue("selection")))!!,
             background = c("background"),
             onBackground = c("foreground"),
             surface = c("dark_background"),
@@ -97,10 +96,21 @@ fun TendTheme(palette: OmarchyPalette = OmarchyPalette(), content: @Composable (
             surfaceContainerLowest = c("darker_background"),
             surfaceTint = Color.Transparent,
             outline = c("selection"),
-            outlineVariant = c("lighter_background"),
-            error = c("bright_red"),
-            onError = c("background"),
+            outlineVariant =
+                parseColor(
+                    mixHex(
+                        palette.colors.getValue("background"),
+                        palette.colors.getValue("foreground"),
+                        .18,
+                    )
+                )!!,
+            error = c("red"),
+            onError = parseColor(inkFor(palette.colors.getValue("red")))!!,
             errorContainer = c("red").copy(alpha = .15f),
+            onErrorContainer = c("foreground"),
+            inverseSurface = c("foreground"),
+            inverseOnSurface = c("background"),
+            inversePrimary = c("background"),
         )
     val type =
         Typography(
@@ -129,5 +139,30 @@ fun TendTheme(palette: OmarchyPalette = OmarchyPalette(), content: @Composable (
                     letterSpacing = 1.sp,
                 ),
         )
-    MaterialTheme(colorScheme = scheme, typography = type, content = content)
+    CompositionLocalProvider(LocalTendPalette provides palette) {
+        MaterialTheme(colorScheme = scheme, typography = type, content = content)
+    }
+}
+
+val LocalTendPalette = staticCompositionLocalOf { OmarchyPalette() }
+
+/** Android sheets own a separate window; the host supplies its system-bar policy. */
+val LocalSheetAppearance =
+    staticCompositionLocalOf<(Boolean) -> ModalBottomSheetProperties> {
+        { ModalBottomSheetProperties() }
+    }
+
+@Composable
+fun tendSheetProperties(): ModalBottomSheetProperties =
+    LocalSheetAppearance.current(
+        luminance(LocalTendPalette.current.colors.getValue("dark_background")) > .179
+    )
+
+val LocalSheetSystemBars = staticCompositionLocalOf<@Composable (Boolean) -> Unit> { {} }
+
+@Composable
+fun TendSheetSystemBars() {
+    LocalSheetSystemBars.current(
+        luminance(LocalTendPalette.current.colors.getValue("dark_background")) > .179
+    )
 }

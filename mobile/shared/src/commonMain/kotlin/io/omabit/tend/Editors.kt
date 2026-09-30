@@ -89,9 +89,11 @@ fun NewReminderSheet(
         }
     }
     ModalBottomSheet(
+        properties = tendSheetProperties(),
         onDismissRequest = { if (!client.busy) onDismiss() },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
+        TendSheetSystemBars()
         Column(
             Modifier.fillMaxWidth()
                 .imePadding()
@@ -253,9 +255,11 @@ fun ReminderSheet(
         }
     }
     ModalBottomSheet(
+        properties = tendSheetProperties(),
         onDismissRequest = { if (!client.busy) onDismiss() },
         sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true),
     ) {
+        TendSheetSystemBars()
         Column(
             Modifier.fillMaxWidth()
                 .imePadding()
@@ -844,7 +848,8 @@ fun ListSheet(repo: TendRepository, client: ClientState, list: TaskList, onDismi
     var deleting by remember { mutableStateOf(false) }
     val access = client.data.access(list.id)
     val editable = repo.canEdit(list.id) && !client.busy
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+    ModalBottomSheet(onDismissRequest = onDismiss, properties = tendSheetProperties()) {
+        TendSheetSystemBars()
         Column(
             Modifier.fillMaxWidth()
                 .imePadding()
