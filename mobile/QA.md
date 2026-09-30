@@ -1,122 +1,105 @@
-# Android alpha QA — 2026-09-26
+# Tend theme sync / Android alpha02 — 2026-09-29
 
 ## Deliverable
 
-`artifacts/tend-0.1.0-alpha01.apk` is the signed, optimized Android release.
-Application ID: `io.omabit.tend`; version code: 1; minimum API: 26; target API: 36.
-APK size is approximately 1.8 MiB. ARM64, ARM32, x86, and x86_64 are packaged.
+`artifacts/tend-0.1.0-alpha02.apk` is the signed, optimized Android update.
+Application ID `io.omabit.tend`, version code 2, minimum API 26, target API 36.
+It uses alpha01's signing identity, so installing over that build preserves
+accounts and cached data. No new permissions or Google Play Services dependency.
 
-SHA-256:
+APK SHA-256:
 
 ```text
-8ccecb96c59f27ce4f14904b40a2c05a6b38cc0afb3eb3fb62ee09144a9de5dc
+91a6cd61020f0598ad1bf7d811303a92f4db5bace051b555e5721378f60df910
 ```
 
-Signing certificate SHA-256 (not a private key):
+Signing certificate SHA-256:
 
 ```text
 ecbf2290150711ec6e3d138392fb1115b4dd619b4a857de056c965c2502b4dc5
 ```
 
-Verified with `apksigner verify --verbose --print-certs` (v2 signing) and
-`zipalign -c -P 16 -v 4`. The final release installed and cold-launched successfully
-on the Pixel 8 API 36 emulator; `am start -W -S` reported 306 ms on this machine.
-That single emulator measurement is not a physical-device performance benchmark.
+The release passes `apksigner verify` (v2) and 16 KiB `zipalign` verification.
+It installed over the previous release and cold-launched on the API-36 emulator
+in 291 ms (`am start -W -S`; a single emulator observation, not a device benchmark).
+Physical GrapheneOS/Android 17 and production HTTPS acceptance remain separate
+from the emulator/fake-ship tests below.
 
-## Verification performed
+## Verified behavior
 
-- 25 core tests and 9 HTTP/Eyre transport tests passed. Coverage includes 10,000
-  reminders, parent-first nesting, ancestor context, cycles/orphans, stale list
-  and preference revisions, dates, DST and recurrence rules, URL validation,
-  code/cookie handling, incompatible protocols, bounded responses, ack/nack
-  distinction, and unsafe-link rejection.
-- One opt-in JVM integration test passed against the existing running `~wex`
-  and `~rus` fake ships: login, subscription, list/section/reminder creation,
-  assignment, scheduling, metadata, nesting, recurring completion, invitation
-  acceptance, and peer-to-owner canonical confirmation. Its isolated QA list
-  was deleted; pre-existing lists were not edited.
-- An additional **installed Android app** live-ship test passed against `~wex`:
-  real login UI, Android networking and storage, canonical creation/completion,
-  and cleanup. No real code is embedded in the APK, source, or screenshots.
-- Android lint passed with 0 errors and 12 warnings (pinned-version update
-  suggestions and a SharedPreferences KTX suggestion). Release vital lint passed.
-- The final signed release's login screen was visually inspected. End-to-end
-  native write tests use the development variant because local fake ships use
-  HTTP; production HTTPS and the physical GrapheneOS device still need the
-  user-assisted acceptance check below.
+- Full Omarchy profile, light/dark palettes, legacy Talon bridge and its optional
+  Auto fields, full-profile priority, stable bridge ID independent of `activeId`.
+- Live `%settings` updates while typing preserve the browser's focused draft and
+  Android's unsent draft. Android draft also survives activity recreation.
+- Local opt-out persists independently per account. Switching ships restores
+  the right palette and preference, including from cached/offline state.
+- Invalid/unknown profiles retain the last valid theme; deleting both supported
+  entries restores Tend default. Settings failure does not disable reminder sync.
+- Android activity and already-open sheet system-bar icons adapt to light themes.
+  Material 3's sheet window initialized those flags only at creation, so a small
+  Android-only window hook now updates them without recreating the editor.
+- Web changes apply CSS variables without rerendering reminder content. Theme
+  switches suppress color transitions briefly to avoid mixed light/dark frames.
 
-The repeatable native fixture test exercises actual Compose controls and the
-packaged app, not a mocked repository: URL/+code login, nested items, reminder
-draft, assignee dropdown, calendar, recurrence, snapshot arrival and activity
-recreation while editing, save, recurring completion, notes editing, isolated
-account switching, and offline read-only presentation.
+## Test evidence
 
-| Emulator layout | Text scale | Full native flow |
-| --- | --- | --- |
-| Pixel 8, 1080 × 2400 px / approximately 411 × 914 dp | 100% | Passed |
-| Narrow, 840 × 1491 px / 320 × 568 dp | 100% | Passed |
-| Landscape, 2400 × 1080 px / approximately 914 × 411 dp | 100% | Passed |
-| Pixel 8, 1080 × 2400 px | 150% | Passed |
-
-All runs used 420 dpi and Android 16/API 36. Short layouts deliberately scroll
-the editor/calendar body while keeping confirmation actions inside the viewport.
-An additional cold-process test stopped the fixture, force-stopped the client,
-and relaunched it: encrypted saved identity and Room content restored offline,
-with mutation controls disabled.
+- **42 Kotlin tests passed:** 25 existing core, 11 HTTP/Eyre transport, 6 palette
+  and cache tests. The opt-in legacy JVM write test was skipped for this theme
+  pass; it is not counted among the 42.
+- **14 web tests passed:** existing hierarchy/recurrence plus five new parser,
+  fallback, size-bound and semantic-color tests.
+- **Live browser test passed** against fake-wex:8082 and fake-rus:8081. The
+  frontend document was routed to the worktree during development; all settings,
+  authentication and Tend requests reached the real running ships. Direct
+  settings pokes observed Gall acknowledgements, and original entries were
+  restored. No reminder writes occurred in this test.
+- Light and dark screenshots at widths **320, 640, 768, 1024, 1280, 1440, 1536**,
+  each at heights **568 and 960**, with no horizontal viewport overflow. Settings,
+  reminder detail, calendar, and bridge-only peer captures are also included.
+- **Installed Android live-theme test passed** at Pixel 8's 1080×2400 and narrow
+  840×1491 (320×568 dp), API 36. It uses real fake-ship settings and restores them.
+- **Existing native reminder flow passed** against the local fixture: login,
+  nesting, assignment, calendar/recurrence, editing, rotation, multi-ship switch,
+  and offline reading. This is an actual installed-app test, not a repository mock.
+- Android debug lint and release vital lint passed. Existing deprecation and
+  pinned-version warnings do not prevent the build.
 
 ## Screenshots
 
-These images use disposable fixture content, not personal ship content. Image
-artifacts are retained locally with the APK, not committed to source control.
+The captured palettes are conspicuous QA examples, not new defaults. The real
+fake ships' list content is visible; screenshots are served only on the tailnet
+handoff and retained locally, not committed to Git.
 
-- [Signed release login](artifacts/qa-pixel8/00-release-login.png)
-- [All reminders and nested children](artifacts/qa-pixel8/02-all-nesting.png)
-- [New reminder with assignee, date, and recurrence](artifacts/qa-pixel8/04-new-reminder.png)
-- [Calendar on a narrow screen](artifacts/qa-320x568/03a-calendar.png)
-- [Landscape calendar](artifacts/qa-landscape/03a-calendar.png)
-- [Calendar at 150% text size](artifacts/qa-font150/03a-calendar.png)
-- [Independent ship accounts](artifacts/qa-pixel8/06-separate-accounts.png)
-- [Offline cache after cold process restart](artifacts/screenshots/offline-cold-start.png)
+- [Web light settings](artifacts/themes/web/appearance-settings-light.png)
+- [Web dark desktop](artifacts/themes/web/dark-1440x960.png)
+- [Web narrow dark](artifacts/themes/web/dark-320x568.png)
+- [Web light calendar](artifacts/themes/web/calendar-light.png)
+- [Android dark](artifacts/themes/android-pixel8/01-dark-home.png)
+- [Android live light draft](artifacts/themes/android-pixel8/02-light-draft.png)
+- [Android light calendar](artifacts/themes/android-pixel8/03-light-calendar.png)
+- [Android local opt-out](artifacts/themes/android-pixel8/04-local-opt-out.png)
+- [Android bridge-only peer](artifacts/themes/android-pixel8/05-peer-bridge.png)
+- [Android cached theme offline](artifacts/themes/android-pixel8/06-cached-light-offline.png)
 
-Each `artifacts/qa-*` folder also contains the complete eight-screen test flow.
-The narrow screenshots precede the final grammatical “Every day” label polish;
-the later Pixel 8, landscape, and large-text captures include it.
+All layout captures are under `artifacts/themes/`. Repeatable commands and the
+exact published settings contract are in [TEND_THEMES.md](../docs/TEND_THEMES.md).
 
-## Android 17 limitation
+## Boundaries and remaining acceptance
 
-Both installed Android 17 emulator images (API 37.0 and API 37.2 QPR2) repeatedly
-crashed in the **guest system's SurfaceFlinger**, before a reliable app test:
+No Gall `.hoon` source, protocol, theme plugin, or Omarchy plugin was edited or
+tested as part of this change. Web source changes are confined to
+`desk/app/tend.html`; mobile work is in `mobile/`. Other worktrees remain untouched.
+The fake-rus mounted frontend was backed up and committed as a single HTML change
+through Dojo, recompiling the unchanged embedded agent. No live-network ship was
+deployed. Test-created settings entries were removed; pre-existing values were
+restored. Empty settings buckets can remain after entry deletion.
 
-```text
-RegionSampling / mapper.ranchu.so:
-Assertion failed: !rcEnc->featureInfo()->hasReadColorBufferDma
-```
+The loopback evaluator rejected an initial attempt to run the commit generator
+as an expression. Its documented cancel operation cleared that request, and its
+read API was reverified; no agent restart or logic change was needed.
 
-Alternate graphics modes and GLDMA settings did not resolve it. This is not
-evidence of a Tend crash, but it also does not establish Android 17 compatibility.
-The unreliable images are not part of the retained daily development setup.
-
-## Remaining acceptance checks / known alpha boundaries
-
-1. Install the signed APK on the actual GrapheneOS Pixel 8, allow Network access,
-   and sign into an existing `%tend` protocol-2 ship over trusted HTTPS. No Google
-   Play Services are required. Verify on both Wi-Fi/tailnet and normal reconnect.
-2. Check physical keyboard/IME behavior, TalkBack, touch feel, and battery use.
-   Emulator layout checks are not an accessibility or battery certification.
-3. No notifications, background refresh, offline mutations, cross-list transfer,
-   bulk editing, drag ordering, advanced recurrence-rule authoring, or iOS host
-   are delivered in this alpha. Existing advanced recurrence rules are preserved.
-4. Theme tokens match the proposed Omarchy vocabulary, but automatic `%settings`
-   theme synchronization waits for that extension's agreed wire contract.
-5. A remote write whose canonical streamed result is missed during disconnect
-   can remain uncertain when the replica has no durable receipt. The pending
-   journal is preserved and the operation is not automatically re-submitted.
-
-## Repository boundary
-
-All implementation and documentation changes are under `mobile/`, on
-`codex/tend-mobile`, based on frozen Tend commit `5e431a5`. No Gall source,
-browser, plugin, or existing root tests changed. No ship deployment/restart was
-performed. Other worktrees and the primary checkout's uncommitted files remain
-untouched. Build/test commands and signing-key backup instructions are in
-[README.md](README.md).
+Install on the actual GrapheneOS Pixel 8 and check trusted HTTPS, keyboard/touch
+feel, and theme changes from your desktop. API-36 emulator success does not prove
+Android-17 compatibility; the previous Android-17 emulator graphics failure is
+recorded in [alpha01 QA](QA-ALPHA01.md). There is still no iOS host, background
+notification delivery, offline mutation queue, or full desktop feature parity.

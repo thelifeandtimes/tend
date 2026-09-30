@@ -28,6 +28,16 @@ and can coexist with it. Subsequent alpha updates must use the same signing key.
 Neither uninstalling nor forgetting an account deletes anything from your ship.
 Uninstalling does remove this device's sessions, cache, and unsent drafts.
 
+For a read-only local/tailnet handoff of the APK, report and screenshots:
+
+```sh
+python3 tools/serve_artifacts.py --bind YOUR_TAILSCALE_IPV4 --port 9999
+```
+
+The server exposes an explicit artifact/document allowlist, not the repository
+or signing directory. It refuses wildcard/public bind addresses. Stop it when
+the handoff is no longer needed; tailnet membership/ACLs control access.
+
 ## What works
 
 - URL/+code sign-in; encrypted, independently switchable ship sessions.
