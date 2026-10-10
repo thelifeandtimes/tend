@@ -1,12 +1,15 @@
-# Omabit Tend: Product and Architecture Plan
+# Tend: Product and Architecture Plan
 
 Status: initial design specification  
 Research baseline: Apple Reminders in iOS/macOS 26, as documented on 2026-09-10  
-Product thesis: an Apple Reminders-class application in the Omabit family whose native UI is an Omarchy shell plugin and whose identity, durable state, and multiplayer synchronization live on Urbit.
+Product thesis: an Apple Reminders-class application with native Omarchy and mobile clients whose identity, durable state, and multiplayer synchronization live on Urbit.
 
 ## 1. Product definition
 
-Omabit is the umbrella project for Omarchy–Urbit applications and tooling. **Tend** is the reminder application, `%tend` is its Gall agent/desk, `io.omabit.tend` is its Omarchy plugin, `omabit tend …` is its umbrella CLI route, and `omabit://tend/…` is its capability-link namespace.
+**Tend** is an independent reminder application in `thelifeandtimes/tend`.
+`%tend` is its Gall agent/desk, `io.omabit.tend` is its stable plugin/mobile ID,
+`tend …` is its standalone CLI, and `omabit://tend/…` remains its capability-link
+namespace for compatibility. The Omabit ship manager is a separate project.
 
 Tend is a self-hosted, replica-backed multiplayer reminder application for Omarchy Linux users.
 
@@ -118,7 +121,7 @@ Apple notifies each collaborator independently: sharing a list does not make one
 | Badge and Today policy | Configurable badge count, all-day notification time, and whether all-day items become overdue the next day | Core |
 | Headless plugin service | Maintains the Eyre channel, receives updates, dispatches notifications, and recovers after shell reload | Core |
 | Desktop notifications | Native Omarchy notifications with Complete, Snooze, and Open actions | Core |
-| CLI | `omabit tend add`, `today`, `list`, `complete`, `snooze`, `open`, `share`, and machine-readable JSON output | Core |
+| CLI | `tend add`, `today`, `list`, `complete`, `snooze`, `open`, `share`, and machine-readable JSON output | Core |
 | Global shortcut | User-configurable quick-add and full-app bindings | Core |
 | Share/open handler | `omabit://tend/…` URI route and commands that accept selected text, a URL, or a file | Parity |
 | Accessibility | Complete keyboard control, visible focus, scalable text, contrast-safe theme binding, screen-reader labels where supported, and reduced-motion behavior | Core |
@@ -440,7 +443,7 @@ These boundaries must be stated plainly in documentation and threat-model tests.
 │   ├── models/
 │   ├── transport/
 │   ├── icons/
-│   └── bin/omabit-tend
+│   └── bin/tend-tend
 ├── tests/
 │   ├── protocol/
 │   ├── recurrence/
@@ -573,7 +576,7 @@ Use measurements from the spike to set numeric release gates; do not invent targ
 
 ## 9. Settled implementation decisions
 
-- The component is **Tend**, with `%tend`, `io.omabit.tend`, `omabit tend …`, and `omabit://tend/…` as its public namespaces.
+- The component is **Tend**, with `%tend`, `io.omabit.tend`, `tend …`, and `omabit://tend/…` as its public namespaces.
 - The Omarchy client connects directly to the user's own ship over Eyre/HTTP. Primary onboarding is an HTTPS ship domain plus a current `+code`; custom HTTPS and explicit loopback endpoints are also supported.
 - Planets, moons, and comets are first-class users. Client validation, invitations, ACLs, assignments, replicas, and test fixtures must accept arbitrary valid Urbit `@p` identities.
 - The list owner's ship is the authoritative sequencer. Shared lists are readable from replicas while that host is Offline or Checking, but all shared mutations are blocked until it is Online and caught up.

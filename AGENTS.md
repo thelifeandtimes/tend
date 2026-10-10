@@ -1,54 +1,43 @@
-# Omabit contributor instructions
+# Tend contributor instructions
 
-## Begin here
+Read `README.md`, `docs/REPOSITORY.md`, and `docs/WORKSTREAMS.md` before
+repository-wide changes. Read the nearest component documentation and any
+more-specific `AGENTS.md` before changing that component.
 
-Read `README.md`, `docs/REPOSITORY.md`, and `docs/WORKSTREAMS.md` before changing
-repository-wide structure. Read the nearest workstream documentation before
-changing an application. More-specific `AGENTS.md` files take precedence within
-their directories.
+## Boundaries
 
-## Workstream boundaries
+This repository owns the complete Tend application: the `%tend` desk and web
+client, Omarchy plugin/transport, `tend` CLI, native mobile client, tests, release
+tooling, documentation, and agent skill. The Omabit ship manager is a separate
+project; do not add an implicit runtime or build dependency on it.
 
-Omabit is a monorepo with four primary workstreams: the Urbit host manager,
-Tend, Pals discovery, and the Tlon Messenger client. Keep each independently
-buildable and testable. Do not create implicit runtime dependencies between
-workstreams when a documented interface will do.
+Keep `%tend`, its publisher, wire/mark names, plugin/mobile ID `io.omabit.tend`,
+invitation URI scheme, and existing settings/credential paths stable. Changing
+persistent identities requires a separate, explicitly approved migration.
 
-The Tend implementation is temporarily rooted at `desk/`, `omarchy-plugin/`,
-`tests/`, and `PRODUCT_ARCHITECTURE_PLAN.md`. Another task may be using those
-paths. Do not move, rename, or broadly reformat them without explicit
-coordination. When Tend moves, move the complete workstream atomically.
-
-The Urbit host manager lives at `apps/urbit-host/` and has its own contributor
-instructions. Read `apps/urbit-host/AGENTS.md` and the documents it names before
-changing it. Repository edit/test permission does not authorize Docker, SSH,
-systemd, live ship, or machine-configuration operations.
-
-`apps/pals/` and `apps/tlon-messenger/` are scoped placeholders until their
-product and protocol specifications are approved. Do not invent a production
-protocol in either directory as incidental work for another application.
+Never commit piers, keys, codes, cookies, runtime state, or signing identities.
+Repository testing does not authorize live-ship mutations, service changes,
+plugin deployment, or shell restarts. Prefer offline tests and isolated installs.
+The native client has additional instructions in `mobile/AGENTS.md`.
 
 ## Concurrent work
 
-Do not run concurrent coding tasks in the same checkout. After the repository
-has an initial commit, use a separate Git worktree and branch for each active
-workstream. Keep the primary checkout for integration and repository-wide
-changes. Check active task context before making cross-workstream moves.
-
-The canonical repository directory is `omabit`. Do not remove any temporary
-`scratch-omabit` compatibility symlink while a task or terminal still depends on
-the old path. Register new Codex projects and worktrees against the canonical
-path.
+Use a separate Git worktree and `codex/` branch per active coding task. The
+canonical sourcebox checkout is `~/repos/tend`; historical development worktrees
+may remain at older paths until their sessions and artifacts are retired.
+Preserve unrelated working changes. Do not rewrite shared history or force-push.
 
 ## Validation
 
-Use the narrowest applicable command first:
+Start with the narrowest applicable tests, then:
 
 ```sh
 make check-tend
-make check-urbit-host
-make check-all
+make dist-tend
+make check-tend-release
+# Requires the Android/JDK toolchain described in mobile/README.md:
+make check-mobile
 ```
 
-The root `make check` remains an alias for `make check-tend` until the active Tend
-work is migrated into its final application directory.
+`make check` aliases the desktop/web/CLI checks. `make check-all` additionally
+checks/builds mobile. Real-ship migration/collaboration checks remain opt-in.

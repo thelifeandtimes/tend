@@ -1,14 +1,15 @@
-# Tend by Omabit
+# Tend
 
 Tend is a multiplayer reminders and task application backed by Urbit. This
 repository contains:
 
 - the `%tend` Gall desk and browser application;
 - the Tend Omarchy panel, service, and menubar widget;
-- the `omabit tend` command-line client; and
+- the standalone `tend` command-line client;
+- the Android-first native mobile client with per-ship theme sync; and
 - release, test, migration, and agent-skill tooling.
 
-Tend keeps its canonical state on your ship. Omabit does not require a hosted
+Tend keeps its canonical state on your ship. It does not require a hosted
 account, database, analytics service, or mandatory notification relay.
 
 > **Status:** Tend is pre-release software. Keep the Gall desk, Omarchy plugin,
@@ -37,8 +38,8 @@ https://YOUR-SHIP-DOMAIN/apps/tend
 Clone the repository and build the deterministic Tend release:
 
 ```sh
-git clone https://github.com/thelifeandtimes/omabit.git
-cd omabit
+git clone https://github.com/thelifeandtimes/tend.git
+cd tend
 make dist-tend
 ```
 
@@ -47,8 +48,8 @@ Extract and verify it:
 ```sh
 version=$(tr -d '[:space:]' < VERSION)
 release_dir=$(mktemp -d)
-tar -xzf "dist/omabit-tend-$version.tar.gz" -C "$release_dir"
-cd "$release_dir/omabit-tend-$version"
+tar -xzf "dist/tend-$version.tar.gz" -C "$release_dir"
+cd "$release_dir/tend-$version"
 sha256sum --check SHA256SUMS
 ```
 
@@ -60,15 +61,19 @@ Install and enable the Omarchy plugin:
 
 The installer places the plugin at
 `${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/io.omabit.tend` and the CLI
-at `$HOME/.local/bin/omabit`. Existing installations are not overwritten unless
+at `$HOME/.local/bin/tend`. Existing installations are not overwritten unless
 `--force` is supplied; replacements are backed up first.
+
+Tend no longer installs an `omabit` executable. Existing `omabit` commands and
+other plugins are left untouched. The plugin ID and connection/credential paths
+are unchanged; no ship or user-data migration is required.
 
 Connect the desktop to your ship. The `+code` is read from a hidden prompt and
 is exchanged for an Eyre session rather than saved:
 
 ```sh
-omabit tend connect https://YOUR-SHIP-DOMAIN
-omabit tend status
+tend connect https://YOUR-SHIP-DOMAIN
+tend status
 ```
 
 You can also connect from the Tend panel's settings screen.
@@ -99,14 +104,14 @@ running and determine the absolute path to that directory, for example:
 In another terminal:
 
 ```sh
-git clone https://github.com/thelifeandtimes/omabit.git
-cd omabit
+git clone https://github.com/thelifeandtimes/tend.git
+cd tend
 make dist-tend
 
 version=$(tr -d '[:space:]' < VERSION)
 release_dir=$(mktemp -d)
-tar -xzf "dist/omabit-tend-$version.tar.gz" -C "$release_dir"
-cd "$release_dir/omabit-tend-$version"
+tar -xzf "dist/tend-$version.tar.gz" -C "$release_dir"
+cd "$release_dir/tend-$version"
 sha256sum --check SHA256SUMS
 ```
 
@@ -165,19 +170,23 @@ runtime data to this repository.
 Open the Omarchy panel or use the CLI:
 
 ```sh
-omabit tend today
-omabit tend lists
-omabit tend add "Buy milk" --list Inbox --tag groceries
-omabit tend schedule Inbox 42 --due 2026-09-26T09:00 --timezone America/Los_Angeles --repeat weekly
-omabit tend move-list Inbox 42 "Shared chores"
-omabit tend complete 1 42
-omabit tend invitations
+tend today
+tend lists
+tend add "Buy milk" --list Inbox --tag groceries
+tend schedule Inbox 42 --due 2026-09-26T09:00 --timezone America/Los_Angeles --repeat weekly
+tend move-list Inbox 42 "Shared chores"
+tend complete 1 42
+tend invitations
 ```
 
-Run `omabit tend --help` for the full command list. The same installed desk
+Run `tend --help` for the full command list. The same installed desk
 serves the browser client at `/apps/tend`.
 
 ## Development
+
+For Android installation, the development toolchain, and signed builds, see
+[`mobile/README.md`](mobile/README.md). Mobile sources and fixtures are included
+in this repository and the source release; APKs are built separately.
 
 Run the complete Tend validation suite with:
 
@@ -203,8 +212,10 @@ The initial Codex-compatible Tend skill is in [`skills/tend`](skills/tend).
 - [Backup and restore](docs/TEND_BACKUP.md)
 - [Accessibility](docs/TEND_ACCESSIBILITY.md)
 - [Native mobile client plan and open decisions](docs/TEND_MOBILE_CLIENT_PLAN.md)
+- [Current mobile client and verification](mobile/README.md)
+- [Ship theme synchronization](docs/TEND_THEMES.md)
 - [Product architecture](PRODUCT_ARCHITECTURE_PLAN.md)
 
-The repository also contains early Omabit host-manager, Pals, and Tlon
-Messenger workstreams. Their boundaries and current state are documented in
-[`docs/WORKSTREAMS.md`](docs/WORKSTREAMS.md).
+The Omabit ship manager is a separate project. See
+[`docs/REPOSITORY.md`](docs/REPOSITORY.md) for source layout and
+[`docs/WORKSTREAMS.md`](docs/WORKSTREAMS.md) for Tend component boundaries.

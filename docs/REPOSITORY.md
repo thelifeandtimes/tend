@@ -1,73 +1,52 @@
-# Omabit Repository Model
+# Tend repository
 
-## Target layout
+Canonical remote: `https://github.com/thelifeandtimes/tend.git`.
+Integration branch: `master`. Sourcebox checkout: `~/repos/tend`.
 
-```text
-omabit/
-├── apps/
-│   ├── urbit-host/        Independent Go CLI and host service
-│   ├── tend/              Gall desk, Omarchy plugin, and Tend tests
-│   ├── pals/              Omarchy-user discovery integration
-│   └── tlon-messenger/    Omarchy-native Tlon Messenger client
-├── packages/              Shared code only after two apps need it
-├── docs/                  Cross-workstream architecture and decisions
-├── AGENTS.md              Repository coordination rules
-└── Makefile               Narrow and aggregate developer commands
+## Source map
+
+- `desk/`: `%tend` Gall agent, marks, libraries, migrations, and browser UI.
+- `omarchy-plugin/`: panel, menubar widget, service, and Eyre transport.
+- `bin/tend`: standalone command-line client; uses the bundled/installed transport.
+- `mobile/`: Kotlin Multiplatform/Compose Android client and native fixtures/tests.
+- `tests/`: desktop, browser, CLI, protocol, scale, and packaging regression tests.
+- `scripts/`, `packaging/tend/`: validation and deterministic release/install tooling.
+- `skills/tend/`: optional agent instructions for the CLI.
+- `docs/`, `PRODUCT_ARCHITECTURE_PLAN.md`: component contracts and product decisions.
+
+The former host-manager import and Pals/messenger planning stubs are retired from
+the current tree. They remain recoverable in history before the repository
+separation (for example commit `1e28444`). Tend has no build dependency on them.
+The replacement Omabit runner is maintained separately; this repository neither
+installs nor owns its global `omabit` command.
+
+## Worktrees
+
+```sh
+git clone https://github.com/thelifeandtimes/tend.git ~/repos/tend
+cd ~/repos/tend
+git worktree add ../tend-web -b codex/tend-web master
+git worktree add ../tend-mobile -b codex/tend-mobile master
 ```
 
-Only `apps/urbit-host/` is in its final location today. Tend remains at the root
-while its active implementation task uses the existing paths. `apps/pals/` and
-`apps/tlon-messenger/` currently hold briefs rather than implementations.
+Choose an unused branch name when one already exists. Keep one active coding
+task per checkout. Verify `git remote get-url --push origin` before publishing;
+do not rely on GitHub's old-name redirect once the Omabit namespace is reused.
 
-## Ownership rules
+## Packaging and private state
 
-- Each application owns its build, test, packaging, runtime, and operational
-  documentation.
-- Root tooling delegates to applications and should not make them one coupled
-  executable.
-- Shared packages are extracted only when at least two workstreams have a real,
-  compatible need. Avoid a speculative framework layer.
-- Urbit identities, piers, keys, `+code`, cookies, runtime databases, logs, and
-  other private state never belong in this repository.
-- Cross-workstream interfaces should be versioned before one app depends on
-  another app's internal files or implementation details.
+`make dist-tend` builds `dist/tend-VERSION.tar.gz` from the Git-tracked product
+source, including native sources and tests. Stage newly added source files before
+building a development archive. Build/cache directories, APKs, screenshots,
+credentials, and untracked source are not silently swept into releases.
+The archive has per-file checksums and an installer at its root. Packaging itself
+requires a Git checkout; the extracted sources can run checks and native builds.
+Android APKs are built/signed separately as documented in `mobile/README.md`.
 
-## Worktree workflow
+The installer owns only `tend` and the existing `io.omabit.tend` plugin. It does
+not remove or overwrite an existing `omabit` executable or another plugin.
+Legacy connection/cookie paths and `OMABIT_TEND_*` environment overrides remain
+compatible. Do not migrate user data as a side effect of renaming source.
 
-The primary checkout uses `master` as the integration branch. After the baseline
-commit, create one worktree per concurrently active workstream:
-
-```bash
-mkdir -p ../omabit-worktrees
-git worktree add ../omabit-worktrees/tend -b codex/tend master
-git worktree add ../omabit-worktrees/urbit-host -b codex/urbit-host master
-git worktree add ../omabit-worktrees/pals -b codex/pals master
-git worktree add ../omabit-worktrees/tlon-messenger -b codex/tlon-messenger master
-```
-
-Use distinct branch names when branches already exist. Do not point two coding
-tasks at the same worktree. Repository-wide integration changes should land in
-the primary checkout after workstream changes are reviewed.
-
-## Tend migration
-
-Move Tend only when its active task is stopped or explicitly coordinated. The
-migration should move these paths together and update references in the same
-change:
-
-```text
-desk/                         -> apps/tend/desk/
-omarchy-plugin/               -> apps/tend/omarchy-plugin/
-tests/                        -> apps/tend/tests/
-PRODUCT_ARCHITECTURE_PLAN.md  -> apps/tend/docs/PRODUCT_ARCHITECTURE_PLAN.md
-```
-
-The root Makefile should then delegate Tend commands into `apps/tend/`, and the
-root `make check` can become the aggregate monorepo check.
-
-## Checkout path
-
-The canonical on-disk checkout is `omabit`. A temporary `scratch-omabit`
-compatibility symlink may exist while an older Codex task or terminal is still
-open. New tasks and saved-project registrations should use the canonical path;
-the symlink can be removed after no process depends on it.
+Sourcebox migration evidence and preserved local work are recorded in
+`TEND_REPOSITORY_MIGRATION.md`.
