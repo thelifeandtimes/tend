@@ -7,9 +7,9 @@ Urbit `+code`.
 ## Export and validate
 
 ```sh
-omabit tend export ~/Documents/tend-backup.json
-omabit tend validate-backup ~/Documents/tend-backup.json
-omabit --json tend validate-backup ~/Documents/tend-backup.json
+tend export ~/Documents/tend-backup.json
+tend validate-backup ~/Documents/tend-backup.json
+tend --json validate-backup ~/Documents/tend-backup.json
 ```
 
 Export writes atomically with mode 0600, refuses a symbolic-link target, and
@@ -41,7 +41,7 @@ be sensitive, and mode 0600 does not encrypt the file at rest.
 Restore is enabled as an explicit empty-state-only operation:
 
 ```sh
-omabit tend restore ~/Documents/tend-backup.json --yes
+tend restore ~/Documents/tend-backup.json --yes
 ```
 
 It follows these rules:

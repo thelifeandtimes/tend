@@ -5,7 +5,7 @@ usage() {
   cat <<'EOF'
 Usage: install.sh [--enable] [--force] [--desk-path PATH] [--plugin-dir PATH] [--bin-dir PATH]
 
-Installs the Tend Omarchy plugin and the omabit CLI into user-owned paths.
+Installs the Tend Omarchy plugin and the tend CLI into user-owned paths.
 When --desk-path is supplied, it overlays Tend source into that exact mounted
 desk while preserving its base marks and sys.kelvin. Existing desktop targets
 and conflicting Tend source are refused unless --force is used. Replacements
@@ -205,7 +205,7 @@ install_desk_overlay() {
   echo "Installed Tend source at $target_dir (preserved mounted base marks and sys.kelvin)"
 }
 
-cli_target="$bin_dir/omabit"
+cli_target="$bin_dir/tend"
 preflight_replace_target "$plugin_dir" "Omarchy plugin"
 preflight_replace_target "$cli_target" "CLI"
 if [[ -n "$desk_path" ]]; then
@@ -236,7 +236,7 @@ if [[ -e "$cli_target" ]]; then
   mv "$cli_target" "$cli_backup"
   echo "Backed up CLI to $cli_backup"
 fi
-install -m 0755 "$release_dir/bin/omabit" "$cli_target"
+install -m 0755 "$release_dir/bin/tend" "$cli_target"
 echo "Installed CLI at $cli_target"
 
 if [[ "$enable_plugin" == true ]]; then
@@ -265,5 +265,5 @@ then
 fi
 
 if [[ -z "$desk_path" ]]; then
-  echo "The desk was not installed. See TEND_INSTALL.md for mounted-desk instructions."
+  echo "The desk was not installed. See docs/TEND_INSTALL.md for mounted-desk instructions."
 fi

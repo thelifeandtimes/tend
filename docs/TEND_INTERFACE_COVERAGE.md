@@ -51,5 +51,5 @@ workflow. The remaining gaps are explicit rather than accidental.
 | Notification acknowledgement | Yes | No | Internal UI lifecycle; not normally useful to an agent. |
 
 The agent-facing draft lives at [`skills/tend/SKILL.md`](../skills/tend/SKILL.md).
-It uses `omabit --json tend ...` so agents receive stable structured output and
+It uses `tend --json ...` so agents receive stable structured output and
 documents the offline-host and destructive-action boundaries.

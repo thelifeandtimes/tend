@@ -20,7 +20,7 @@ checksum_entry=$(cut -d ' ' -f 3- "$checksum_file")
 )
 mkdir -p "$work_dir/extracted"
 tar -xzf "$archive" -C "$work_dir/extracted"
-release_dir=$(find "$work_dir/extracted" -mindepth 1 -maxdepth 1 -type d -name 'omabit-tend-*' -print -quit)
+release_dir=$(find "$work_dir/extracted" -mindepth 1 -maxdepth 1 -type d -name 'tend-*' -print -quit)
 [[ -n "$release_dir" ]] || { echo "Release root is missing" >&2; exit 1; }
 (
   cd "$release_dir"
@@ -47,15 +47,34 @@ qmllint -I "$omarchy_root/shell" \
   "$release_dir/omarchy-plugin/TendNumber.qml" \
   "$release_dir/omarchy-plugin/TendTextArea.qml" \
   "$release_dir/omarchy-plugin/Service.qml"
-python3 -m py_compile "$release_dir/omarchy-plugin/transport/eyre_client.py" "$release_dir/bin/omabit"
+python3 -m py_compile "$release_dir/omarchy-plugin/transport/eyre_client.py" "$release_dir/bin/tend"
 python3 -m py_compile "$release_dir/scripts/check-tend-multiship.py"
 bash -n "$release_dir/install.sh"
 bash -n "$release_dir/scripts/check-tend-migrations.sh"
 [[ "$(cat "$release_dir/VERSION")" == "$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["version"])' "$release_dir/omarchy-plugin/manifest.json")" ]]
-"$release_dir/bin/omabit" --version | grep -q "$(cat "$release_dir/VERSION")"
+"$release_dir/bin/tend" --version | grep -q "$(cat "$release_dir/VERSION")"
 [[ -f "$release_dir/skills/tend/SKILL.md" ]]
 grep -q '^name: tend$' "$release_dir/skills/tend/SKILL.md"
 grep -q 'Tend protocol and interface coverage' "$release_dir/docs/TEND_INTERFACE_COVERAGE.md"
+
+# Every client and its build/test sources must ship, without private build output
+# or the retired runner. Desktop installation does not install the Android app.
+for source_path in mobile/gradlew mobile/gradle/wrapper/gradle-wrapper.jar \
+  mobile/shared/build.gradle.kts mobile/androidApp/build.gradle.kts \
+  mobile/tools/fixture_ship.py mobile/tools/serve_artifacts.py \
+  tests/test_tend_cli.py tests/test_tend_web_theme.js Makefile AGENTS.md \
+  packaging/tend/install.sh scripts/build-tend-release.sh docs/TEND_THEMES.md
+do
+  [[ -f "$release_dir/$source_path" ]] || { echo "Missing product source: $source_path" >&2; exit 1; }
+done
+[[ ! -e "$release_dir/bin/omabit" && ! -e "$release_dir/apps" ]]
+if find "$release_dir/mobile" \
+  \( -name build -o -name .gradle -o -name artifacts -o -name local.properties \
+  -o -name '*.p12' -o -name '*.jks' -o -name '*.keystore' -o -name '*.apk' \) -print -quit | grep -q .; then
+  echo "Private/generated mobile files entered the release" >&2
+  exit 1
+fi
+(cd "$release_dir" && make test)
 
 for desk_dependency in \
   desk.docket-0 \
@@ -84,10 +103,17 @@ if grep -q 'strandio' "$release_dir/desk/ted/tend-migrations.hoon"; then
 fi
 
 install_root="$work_dir/install-root"
+mkdir -p "$install_root/bin" "$install_root/config/omarchy/plugins/ship-manager"
+printf '%s\n' '#!/bin/sh' 'echo ship-manager-sentinel' > "$install_root/bin/omabit"
+chmod 0755 "$install_root/bin/omabit"
+cp "$install_root/bin/omabit" "$work_dir/omabit-original"
+printf '%s\n' 'existing ship-manager plugin' > "$install_root/config/omarchy/plugins/ship-manager/sentinel"
 HOME="$install_root/home" XDG_CONFIG_HOME="$install_root/config" \
   "$release_dir/install.sh" --plugin-dir "$install_root/plugin" --bin-dir "$install_root/bin"
 cmp "$release_dir/omarchy-plugin/manifest.json" "$install_root/plugin/manifest.json"
-cmp "$release_dir/bin/omabit" "$install_root/bin/omabit"
+cmp "$release_dir/bin/tend" "$install_root/bin/tend"
+cmp "$work_dir/omabit-original" "$install_root/bin/omabit"
+OMABIT_TEND_TRANSPORT="$install_root/plugin/transport/eyre_client.py" "$install_root/bin/tend" --help | grep -q 'usage: tend'
 
 if "$release_dir/install.sh" --plugin-dir "$install_root/plugin" --bin-dir "$install_root/bin" >/dev/null 2>&1; then
   echo "Installer unexpectedly overwrote an existing installation without --force" >&2
@@ -102,7 +128,10 @@ if find "$(dirname "$install_root/plugin")" -maxdepth 1 -type d -name 'plugin.ba
   echo "Installer left a plugin backup beside the live plugin target" >&2
   exit 1
 fi
-find "$install_root/bin" -maxdepth 1 -type f -name 'omabit.backup.*' -print -quit | grep -q .
+find "$install_root/bin" -maxdepth 1 -type f -name 'tend.backup.*' -print -quit | grep -q .
+cmp "$work_dir/omabit-original" "$install_root/bin/omabit"
+[[ "$("$install_root/bin/omabit")" == ship-manager-sentinel ]]
+grep -qx 'existing ship-manager plugin' "$install_root/config/omarchy/plugins/ship-manager/sentinel"
 
 mounted_desk="$work_dir/mounted-tend"
 mkdir -p "$mounted_desk/mar" "$work_dir/mounted-originals"
@@ -151,7 +180,7 @@ if HOME="$conflict_install_root/home" XDG_CONFIG_HOME="$conflict_install_root/co
   exit 1
 fi
 [[ ! -e "$conflict_install_root/plugin" ]]
-[[ ! -e "$conflict_install_root/bin/omabit" ]]
+[[ ! -e "$conflict_install_root/bin/tend" ]]
 
 HOME="$desk_install_root/home" XDG_CONFIG_HOME="$desk_install_root/config" \
   "$release_dir/install.sh" --force \
@@ -173,5 +202,5 @@ if HOME="$broken_install_root/home" XDG_CONFIG_HOME="$broken_install_root/config
   exit 1
 fi
 [[ ! -e "$broken_install_root/plugin" ]]
-[[ ! -e "$broken_install_root/bin/omabit" ]]
+[[ ! -e "$broken_install_root/bin/tend" ]]
 echo "Tend release verification passed"

@@ -41,12 +41,12 @@ complete clean-install sequence is in `TEND_INSTALL.md`.
 
 ## Pre-update drill
 
-1. Confirm the current client can reach its ship with `omabit tend status`.
+1. Confirm the current client can reach its ship with `tend status`.
 2. Export and validate a backup:
 
    ```sh
-   omabit tend export ~/Documents/tend-before-update.json
-   omabit tend validate-backup ~/Documents/tend-before-update.json
+   tend export ~/Documents/tend-before-update.json
+   tend validate-backup ~/Documents/tend-before-update.json
    ```
 
 3. Keep a recoverable pier-level backup or host snapshot. A portable export can
@@ -104,7 +104,7 @@ the published update through their `%treaty` source; do not create a second
 local desk or rerun the source overlay on those machines. Wait for every peer
 to finish the update, install the matching desktop-only release with
 `./install.sh --force --enable`, reconnect each desktop, and run
-`omabit tend status`. Verify a read plus one reversible mutation only after the
+`tend status`. Verify a read plus one reversible mutation only after the
 sharing group reports compatible Online peers. If an agent was intentionally
 suspended during maintenance, use `|revive %tend`; an already installed agent
 needs no separate start command after a normal successful commit or remote
@@ -154,7 +154,7 @@ HTTPS and must pass the operating system's certificate validation.
 
 `Checking` means the client has not received its authoritative snapshot yet;
 `Offline` means the stream ended. The service retries with bounded backoff. Run
-`omabit --json tend status` to distinguish saved authentication from actual
+`tend --json status` to distinguish saved authentication from actual
 reachability. Shared-list writes remain disabled unless their owner is Online.
 
 If only one shared list stays Offline, its owner ship is unavailable or the
@@ -206,9 +206,9 @@ operation rather than deleting Gall state.
 
 ### Restore is rejected
 
-`omabit tend restore FILE --yes` works only when Gall has no hosted lists,
-replicas, invitations, or in-flight operations. Run `omabit tend list` and
-`omabit tend invitations` to inspect the visible blockers. The command verifies
+`tend restore FILE --yes` works only when Gall has no hosted lists,
+replicas, invitations, or in-flight operations. Run `tend list` and
+`tend invitations` to inspect the visible blockers. The command verifies
 Gall's durable operation receipt and reports its rejection reason; an Eyre HTTP
 acknowledgement alone is not success. Restore never recreates ACLs or peer
 subscriptions.

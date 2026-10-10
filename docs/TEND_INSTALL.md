@@ -1,27 +1,30 @@
 # Installing Tend
 
 Tend has three local pieces: the `%tend` desk on the user's Urbit ship, the
-`io.omabit.tend` Omarchy shell plugin, and the `omabit` CLI. No Omabit-operated
+`io.omabit.tend` Omarchy shell plugin, and the `tend` CLI. No Omabit-operated
 account or database is involved.
 
 ## Build a release
 
-From the Omabit repository:
+From the Tend repository:
 
 ```sh
 make dist-tend
 make check-tend-release
 ```
 
-The deterministic archive and its checksum are written under `dist/`. The
-tarball is the installable release: unpack it, enter the release directory,
+The deterministic archive and its checksum are written under `dist/`. It includes
+all client source, tests, and documentation; Android APKs are built separately
+using `mobile/README.md`. Packaging requires a Git checkout and includes tracked
+files only, so stage newly added source before building. Unpack the archive,
+enter the release directory,
 and verify its internal manifest before running the installer. For example:
 
 ```sh
 version=$(cat VERSION)
 mkdir -p dist/unpacked
-tar -xzf "dist/omabit-tend-$version.tar.gz" -C dist/unpacked
-cd "dist/unpacked/omabit-tend-$version"
+tar -xzf "dist/tend-$version.tar.gz" -C dist/unpacked
+cd "dist/unpacked/tend-$version"
 sha256sum --check SHA256SUMS
 ```
 
@@ -88,7 +91,14 @@ mounted base files are still preserved.
 The default desktop targets are:
 
 - `${XDG_CONFIG_HOME:-$HOME/.config}/omarchy/plugins/io.omabit.tend`
-- `$HOME/.local/bin/omabit`
+- `$HOME/.local/bin/tend`
+
+The installer never owns or replaces `$HOME/.local/bin/omabit`; it can coexist
+with the separate Omabit ship manager. Old Tend installations of that command
+are not automatically removed. Update shortcuts/scripts to `tend COMMAND`.
+An optional `omabit tend …` forwarding adapter belongs to the Omabit repository,
+not Tend's installer. The existing `io.omabit.tend` plugin ID, `OMABIT_TEND_*`
+overrides, settings/cookie paths, and invitation URIs remain stable.
 
 The installer refuses existing desktop files and symbolic-link targets.
 `--force` moves existing desktop installations to timestamped backups before
@@ -183,9 +193,9 @@ Open the Tend overlay and enter the ship's HTTPS domain plus the current
 `+code`, or use the CLI (the code is read from a hidden prompt):
 
 ```sh
-omabit tend connect https://sampel-palnet.arvo.network
-omabit tend status
-omabit tend list
+tend connect https://sampel-palnet.arvo.network
+tend status
+tend list
 ```
 
 Planets, moons, and comets use the same flow. Plain HTTP is accepted only for a
@@ -214,12 +224,12 @@ is running before troubleshooting the desktop plugin.
 To remove the local session and select another ship:
 
 ```sh
-omabit tend disconnect
+tend disconnect
 ```
 
-`omabit tend share LIST SHIP` prints a recipient-bound capability URI in its
+`tend share LIST SHIP` prints a recipient-bound capability URI in its
 result. The invited user normally sees the invitation in-app, but can also run
-`omabit tend accept 'omabit://tend/invite/OWNER/TOKEN'`. The URI contains a
+`tend accept 'omabit://tend/invite/OWNER/TOKEN'`. The URI contains a
 single-use invitation token, so share it only with the named recipient.
 
 ## Verify the multiplayer loop
@@ -248,8 +258,8 @@ The plugin does not modify Hyprland configuration during installation. Add
 user-chosen bindings to `~/.config/hypr/bindings.conf`; for example:
 
 ```ini
-bindd = SUPER, R, Tend, exec, $HOME/.local/bin/omabit tend open
-bindd = SUPER SHIFT, R, Tend quick capture, exec, $HOME/.local/bin/omabit tend open --capture
+bindd = SUPER, R, Tend, exec, $HOME/.local/bin/tend open
+bindd = SUPER SHIFT, R, Tend quick capture, exec, $HOME/.local/bin/tend open --capture
 ```
 
 Choose different keys if these conflict with local bindings. Hyprland reloads
@@ -260,30 +270,30 @@ the file automatically. Inside the overlay, `Ctrl+N` focuses quick add and
 ## CLI examples
 
 ```sh
-omabit tend today
-omabit --json tend lists
-omabit --json tend show Inbox 42
-omabit tend add "Buy milk" --list Inbox --tag groceries
-omabit tend edit Inbox 42 --notes "Use oat milk" --priority high --flagged
-omabit tend schedule Inbox 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles --repeat weekly --weekday 5
-omabit tend move-list Inbox 42 "Shared chores"
-omabit tend complete 1 42
-omabit tend complete 1 42 43 44
-omabit tend move 1 42 43 --section 7 --rank 2048
-omabit tend delete 1 42 43 --yes
-omabit tend snooze 1 42 --minutes 20
-omabit tend snooze 1 42 --until 2026-09-11T09:30:00-07:00
-omabit tend share 1 ~sampel-palnet --can-invite
-omabit tend invitations
-omabit tend accept 'omabit://tend/invite/sampel-palnet/TOKEN'
-omabit tend unshare 1 ~sampel-palnet
-omabit tend leave 1
-omabit tend open 1 42
-omabit tend open --capture
-omabit --json tend list
-omabit tend export ~/Documents/tend-backup.json
-omabit tend validate-backup ~/Documents/tend-backup.json
-omabit tend restore ~/Documents/tend-backup.json --yes
+tend today
+tend --json lists
+tend --json show Inbox 42
+tend add "Buy milk" --list Inbox --tag groceries
+tend edit Inbox 42 --notes "Use oat milk" --priority high --flagged
+tend schedule Inbox 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles --repeat weekly --weekday 5
+tend move-list Inbox 42 "Shared chores"
+tend complete 1 42
+tend complete 1 42 43 44
+tend move 1 42 43 --section 7 --rank 2048
+tend delete 1 42 43 --yes
+tend snooze 1 42 --minutes 20
+tend snooze 1 42 --until 2026-09-11T09:30:00-07:00
+tend share 1 ~sampel-palnet --can-invite
+tend invitations
+tend accept 'omabit://tend/invite/sampel-palnet/TOKEN'
+tend unshare 1 ~sampel-palnet
+tend leave 1
+tend open 1 42
+tend open --capture
+tend --json list
+tend export ~/Documents/tend-backup.json
+tend validate-backup ~/Documents/tend-backup.json
+tend restore ~/Documents/tend-backup.json --yes
 ```
 
 `tend export` writes a versioned `tend-backup-1` JSON snapshot atomically with
@@ -296,7 +306,7 @@ repeats validation, requires `--yes`, and succeeds only against empty Gall
 state. It does not recreate list sharing; the full contract is documented in
 `docs/TEND_BACKUP.md`.
 
-Run `omabit tend --help` for the complete command list.
+Run `tend --help` for the complete command list.
 
 The release also contains `skills/tend/SKILL.md`, an initial Codex-compatible
 agent skill that uses the CLI's JSON mode. To make it discoverable to a local

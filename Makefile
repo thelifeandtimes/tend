@@ -1,18 +1,18 @@
 .PHONY: check check-all check-tend check-tend-release check-tend-migrations \
-	check-tend-multiship check-urbit-host \
-	build-urbit-host dist-tend urbit-host-version test test-js \
+	check-tend-multiship check-mobile \
+	dist-tend test test-js \
 	validate-plugin lint-qml lint-python
 
 OMARCHY_ROOT ?= $(if $(OMARCHY_PATH),$(OMARCHY_PATH),$(HOME)/.local/share/omarchy)
 
 check: check-tend
 
-check-all: check-tend check-urbit-host
+check-all: check-tend check-mobile
 
 check-tend: validate-plugin lint-qml lint-python test
 
-check-urbit-host:
-	$(MAKE) -C apps/urbit-host check
+check-mobile:
+	cd mobile && ./gradlew :shared:jvmTest :androidApp:lintDebug :androidApp:assembleDebug
 
 check-tend-release:
 	scripts/check-tend-release.sh
@@ -39,12 +39,6 @@ check-tend-multiship:
 
 dist-tend:
 	scripts/build-tend-release.sh
-
-build-urbit-host:
-	$(MAKE) -C apps/urbit-host build
-
-urbit-host-version: build-urbit-host
-	./apps/urbit-host/urbitctl version
 
 validate-plugin:
 	omarchy plugin validate omarchy-plugin
@@ -73,7 +67,7 @@ lint-qml:
 
 lint-python:
 	python3 -m py_compile omarchy-plugin/transport/eyre_client.py
-	python3 -m py_compile bin/omabit
+	python3 -m py_compile bin/tend
 	python3 -m py_compile scripts/check-tend-multiship.py
 
 test: test-js

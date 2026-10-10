@@ -1,16 +1,16 @@
 ---
 name: tend
-description: Read and manage Tend reminders, lists, schedules, recurrence, sections, assignments, and shared-list invitations through the local Omabit CLI. Use when a user asks an agent to inspect or change their Tend data; do not use for unrelated todo applications.
+description: Read and manage Tend reminders, lists, schedules, recurrence, sections, assignments, and shared-list invitations through the local Tend CLI. Use when a user asks an agent to inspect or change their Tend data; do not use for unrelated todo applications.
 ---
 
 # Tend
 
-Use the dependency-free `omabit` CLI. Prefer machine-readable output:
+Use the dependency-free `tend` CLI. Prefer machine-readable output:
 
 ```bash
-omabit --json tend status
-omabit --json tend lists
-omabit --json tend list
+tend --json status
+tend --json lists
+tend --json list
 ```
 
 Before changing data, read the relevant list and reminder so you have current
@@ -20,11 +20,11 @@ Reminder and section arguments are numeric IDs.
 ## Read
 
 ```bash
-omabit --json tend today
-omabit --json tend show "Personal" 42
-omabit --json tend access "Shared chores"
-omabit --json tend sections "Shared chores"
-omabit --json tend invitations
+tend --json today
+tend --json show "Personal" 42
+tend --json access "Shared chores"
+tend --json sections "Shared chores"
+tend --json invitations
 ```
 
 `show` includes the reminder's `ancestors` and recursive `descendants`.
@@ -37,15 +37,15 @@ extra member capability, not a separate role.
 Use the smallest command matching the request:
 
 ```bash
-omabit --json tend add "Buy oats" --list Personal --tag groceries
-omabit --json tend edit Personal 42 --notes "Get steel cut" --priority high --assignee ~sampel-palnet
-omabit --json tend flag Personal 42
-omabit --json tend complete 1 42
-omabit --json tend move-list Personal 42 "Shared chores"
-omabit --json tend section-add "Shared chores" "This week"
-omabit --json tend schedule Personal 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles
-omabit --json tend schedule Personal 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles --repeat weekly --weekday 5 --count 8
-omabit --json tend unschedule Personal 42
+tend --json add "Buy oats" --list Personal --tag groceries
+tend --json edit Personal 42 --notes "Get steel cut" --priority high --assignee ~sampel-palnet
+tend --json flag Personal 42
+tend --json complete 1 42
+tend --json move-list Personal 42 "Shared chores"
+tend --json section-add "Shared chores" "This week"
+tend --json schedule Personal 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles
+tend --json schedule Personal 42 --due 2026-09-25T09:00 --timezone America/Los_Angeles --repeat weekly --weekday 5 --count 8
+tend --json unschedule Personal 42
 ```
 
 For an existing reminder, `edit --tag` replaces its whole tag set; repeat the
@@ -56,11 +56,11 @@ entire descendant subtree.
 For collaboration:
 
 ```bash
-omabit --json tend share "Shared chores" ~sampel-palnet
-omabit --json tend share "Shared chores" ~sampel-palnet --can-invite
-omabit --json tend accept 'omabit://tend/invite/...'
-omabit --json tend unshare "Shared chores" ~sampel-palnet
-omabit --json tend leave "Someone else’s list"
+tend --json share "Shared chores" ~sampel-palnet
+tend --json share "Shared chores" ~sampel-palnet --can-invite
+tend --json accept 'omabit://tend/invite/...'
+tend --json unshare "Shared chores" ~sampel-palnet
+tend --json leave "Someone else’s list"
 ```
 
 Accepted members can edit list metadata, sections and reminders while the host
@@ -74,9 +74,9 @@ Do not infer permission to delete. Ask for confirmation immediately before
 running a destructive command, then pass `--yes`:
 
 ```bash
-omabit --json tend delete 1 42 --yes
-omabit --json tend section-delete Personal 8 --yes
-omabit --json tend list-delete Personal --yes
+tend --json delete 1 42 --yes
+tend --json section-delete Personal 8 --yes
+tend --json list-delete Personal --yes
 ```
 
 If a mutation fails with a stale revision, read state again and reconsider the

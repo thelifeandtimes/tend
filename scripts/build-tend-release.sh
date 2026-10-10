@@ -4,39 +4,26 @@ set -euo pipefail
 repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 version=$(tr -d '[:space:]' < "$repo_dir/VERSION")
 [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "VERSION must be semantic x.y.z" >&2; exit 1; }
+[[ -e "$repo_dir/.git" ]] || { echo "Build releases from a Tend Git checkout" >&2; exit 1; }
 
 output_dir=${1:-"$repo_dir/dist"}
 mkdir -p "$output_dir"
 work_dir=$(mktemp -d)
 trap 'chmod -R u+rwX "$work_dir"; rm -rf "$work_dir"' EXIT
-release_name="omabit-tend-$version"
+release_name="tend-$version"
 release_dir="$work_dir/$release_name"
-mkdir -p "$release_dir/bin" "$release_dir/docs" "$release_dir/scripts" "$release_dir/skills/tend"
+mkdir -p "$release_dir"
 
-cp -a "$repo_dir/desk" "$release_dir/desk"
-cp -a "$repo_dir/omarchy-plugin" "$release_dir/omarchy-plugin"
-find "$release_dir" -type d -name __pycache__ -prune -exec rm -rf {} +
-find "$release_dir" -type f -name '*.pyc' -delete
-cp "$repo_dir/bin/omabit" "$release_dir/bin/omabit"
+# An explicit component allowlist plus Git's index includes the complete source
+# without copying ignored APKs, Gradle caches, signing keys, or runtime fixtures.
+# Stage new files before packaging; tracked edits are read from the working tree.
+git -C "$repo_dir" ls-files -z -- \
+  .gitignore AGENTS.md Makefile PRODUCT_ARCHITECTURE_PLAN.md README.md VERSION \
+  bin desk docs mobile omarchy-plugin packaging scripts skills tests \
+  | tar -C "$repo_dir" --null --verbatim-files-from --no-recursion -T - -cf - \
+  | tar -C "$release_dir" -xf -
 cp "$repo_dir/packaging/tend/install.sh" "$release_dir/install.sh"
-cp "$repo_dir/VERSION" "$release_dir/VERSION"
-cp "$repo_dir/docs/TEND_INSTALL.md" "$release_dir/README.md"
-cp "$repo_dir/docs/TEND_INSTALL.md" "$release_dir/docs/TEND_INSTALL.md"
-cp "$repo_dir/docs/TEND_MULTISHIP_MATRIX.md" "$release_dir/docs/TEND_MULTISHIP_MATRIX.md"
-cp "$repo_dir/docs/TEND_COMPATIBILITY.md" "$release_dir/docs/TEND_COMPATIBILITY.md"
-cp "$repo_dir/docs/TEND_OPERATIONS.md" "$release_dir/docs/TEND_OPERATIONS.md"
-cp "$repo_dir/docs/TEND_PROTOCOL.md" "$release_dir/docs/TEND_PROTOCOL.md"
-cp "$repo_dir/docs/TEND_SECURITY.md" "$release_dir/docs/TEND_SECURITY.md"
-cp "$repo_dir/docs/TEND_ACCESSIBILITY.md" "$release_dir/docs/TEND_ACCESSIBILITY.md"
-cp "$repo_dir/docs/TEND_BACKUP.md" "$release_dir/docs/TEND_BACKUP.md"
-cp "$repo_dir/docs/TEND_PERFORMANCE.md" "$release_dir/docs/TEND_PERFORMANCE.md"
-cp "$repo_dir/docs/TEND_RELEASE_CHECKLIST.md" "$release_dir/docs/TEND_RELEASE_CHECKLIST.md"
-cp "$repo_dir/docs/TEND_INTERFACE_COVERAGE.md" "$release_dir/docs/TEND_INTERFACE_COVERAGE.md"
-cp "$repo_dir/skills/tend/SKILL.md" "$release_dir/skills/tend/SKILL.md"
-cp "$repo_dir/scripts/check-tend-migrations.sh" "$release_dir/scripts/check-tend-migrations.sh"
-cp "$repo_dir/scripts/check-tend-multiship.py" "$release_dir/scripts/check-tend-multiship.py"
-chmod 0755 "$release_dir/bin/omabit" "$release_dir/install.sh" \
-  "$release_dir/scripts/check-tend-migrations.sh" "$release_dir/scripts/check-tend-multiship.py"
+chmod 0755 "$release_dir/bin/tend" "$release_dir/install.sh" "$release_dir/mobile/gradlew"
 
 (
   cd "$release_dir"

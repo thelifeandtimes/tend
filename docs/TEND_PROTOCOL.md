@@ -173,7 +173,7 @@ optional reminder, and—for every individually or batch-completed scheduled
 occurrence—the exact due instant that was completed. Batch entries derive a
 stable event ID from the operation and reminder, so every selected recurrence
 keeps its own history. The overlay renders this log in list settings, and
-`omabit tend activity LIST` exposes the same data to scripts and terminals. A
+`tend activity LIST` exposes the same data to scripts and terminals. A
 log retains the newest 1,000 entries per list.
 
 `local-settings-updated` replaces private list order, per-list presentation,
@@ -213,7 +213,7 @@ render the recipient-bound reference as
 `omabit://tend/invite/<owner>/<percent-encoded-token>`. The URI carries no list
 content and does not bypass Gall: acceptance still reaches the recipient's home
 agent, then the owner verifies the authenticated source ship against its pending
-invite. `omabit tend accept` and `decline` accept either this URI or the explicit
+invite. `tend accept` and `decline` accept either this URI or the explicit
 owner/token pair. System-wide URI-handler registration remains deferred.
 
 ## Persistence
@@ -274,11 +274,11 @@ provider.
 
 ## Backup envelope
 
-`omabit tend export` wraps owner-authoritative lists from the current local
+`tend export` wraps owner-authoritative lists from the current local
 snapshot in `tend-backup-1` with a source ship and UTC export timestamp. Visible
 replicas are deliberately excluded using `/accesses`; restoring one can never
-silently convert it into an owned list. `omabit tend validate-backup` performs
-bounded, offline structural and referential validation. `omabit tend restore`
+silently convert it into an owned list. `tend validate-backup` performs
+bounded, offline structural and referential validation. `tend restore`
 revalidates the same envelope, requires `--yes`, sends one `restore-empty`
 transition, and verifies the durable Gall receipt. Gall accepts it only when no
 hosted lists, replicas, invitations, or in-flight operations exist, and either

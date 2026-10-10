@@ -169,7 +169,7 @@ Last verified: 2026-09-24
 - Eyre hardening now disables redirects for authenticated traffic, replaces
   rather than merges cookie jars on a new login, bounds JSON/SSE/action sizes,
   and fails closed on malformed UTF-8, JSON, event IDs, and content lengths.
-- `omabit tend` provides connect/disconnect/status, list/today/activity, add,
+- `tend` provides connect/disconnect/status, list/today/activity, add,
   complete/uncomplete, move/delete, snooze, share/unshare/leave,
   invitations/accept/decline, restore, and overlay-open commands with optional
   JSON output. It fails closed before shared writes when owner access is not
@@ -179,7 +179,7 @@ Last verified: 2026-09-24
   all incomplete, or assigned reminders—or be disabled. Users can choose the
   default time for new all-day reminders and whether stale all-day items stay
   in Today; timed overdue reminders remain visible.
-- `omabit tend export` writes a complete `tend-backup-1` JSON snapshot without
+- `tend export` writes a complete `tend-backup-1` JSON snapshot without
   authentication material. Export is atomic, mode 0600, refuses symbolic-link
   targets, and does not replace an existing file without explicit `--force`.
   `validate-backup` now performs bounded offline shape, schedule, reference,
