@@ -156,11 +156,29 @@ permit approval, task operation receipt or reload sentinel on these ships.
 
 Native app distribution is distinct from the `%grubbery` framework Clay desk.
 After bootstrap, local Tend `code/` goes only to the distributor's native app
-source. Receiver desks follow its published source through Grubbery; they are not
-local source overlays. `code/version.json` is an opaque app release tag and must
+source. Receiver desks follow its **installed desk/code and root version** through
+Grubbery; they are not local source overlays and do not follow an independently
+shared development tree. The distributor's installed desk must first follow/sync
+the development source and republish its release. The parent session reports that
+Grubbin's independent forward-test confirmed the current `/desks/add` and
+`/desks/share` contracts and this distinction. That is companion contract evidence,
+not a Tend install/distribution result. `code/version.json` is an opaque app release tag and must
 change with each release. Version equality alone proves none of compilation,
-instance startup, permits, operation outcome or data survival. Preserve the
-source/version metadata and full acceptance observations, not only HTTP 200s.
+instance startup, permits, operation outcome or data survival. Process captures
+must record `procs` total/truncated completeness; a partial page cannot prove all
+processes healthy. When the distributor is offline, preserve that unavailable
+source observation and separately capture receiver state/operations. Grubbin's
+capture helper supports this distinction; no Tend capture was run here. Preserve
+the source/version metadata and full acceptance observations, not only HTTP 200s.
+
+The companion procedure read for this handoff is
+`/tmp/grubbin-workshop/docs/RELEASE_AND_RESTART.md`, being finalized in the private
+[Grubbin repository](https://github.com/thelifeandtimes/grubbin). It separates
+local source preparation, distributor installed-desk republishing, receiver
+following, nexus reload and whole-ship replacement. Its release helper writes a
+local version/manifest only. Nothing in this Tend session upgrades services or
+uses that helper as runtime authority. The source gap and interrupted lifecycle
+receipts above remain prerequisites for the proposed exercise.
 
 Same-host fake networking would establish logical ship distribution only. A later
 public-network test needs separately authorized real remote ships, independent
