@@ -1,3 +1,16 @@
+# Native transport preview — 2026-11-17
+
+Added `NativeEyre`, an explicit Grubbery-native preview transport. Three new mock
+HTTP tests passed. The complete JVM suite reported 46 tests, one skipped live test,
+zero failures/errors. `make check-mobile` passed debug lint and APK assembly using
+the documented JDK/SDK. No installation, device test or live native Tend test ran.
+Compose UI/repository adoption is still pending. Existing app IDs, credentials,
+account storage and the default Gall transport were not changed.
+
+The native Hoon implementation is uncompiled because the installed Omabit runner
+lacks `app-development-policy-v2`; see
+[the evidence report](../docs/TEND_GRUBBERY_DEVELOPMENT.md).
+
 # Tend theme sync / Android alpha02 — 2026-09-29
 
 ## Deliverable

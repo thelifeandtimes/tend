@@ -568,7 +568,7 @@ def read_connection(path: Path) -> dict[str, str]:
     return {"baseUrl": base_url, "ship": ship}
 
 
-def login(base_url: str, cookie_path: Path, config_path: Path, code: str) -> dict[str, object]:
+def login(base_url: str, cookie_path: Path, config_path: Path, code: str, *, native: bool = False) -> dict[str, object]:
     base_url = normalize_base_url(base_url)
     if not code.strip():
         raise TendTransportError("Enter the current +code from your ship")
@@ -589,16 +589,26 @@ def login(base_url: str, cookie_path: Path, config_path: Path, code: str) -> dic
             raise TendTransportError("Eyre login response exceeds the 32 MiB limit", "response-too-large")
     if not list(jar):
         raise TendTransportError("Eyre accepted the request without issuing a session cookie")
-    ship = scry_whoami(opener, base_url)
-    state = json_request(opener, base_url + "/~/scry/tend/state.json")
-    validate_snapshot_protocol(state)
+    if native:
+        identity = json_request(opener, base_url + NATIVE_API + "whoami")
+        if not isinstance(identity, str) or not re.fullmatch(r"~?[a-z]+(?:-{1,2}[a-z]+)*", identity):
+            raise TendTransportError("Invalid native ship identity")
+        ship = identity.removeprefix("~")
+        state = json_request(opener, base_url + NATIVE_API + "state")
+        snapshot = state.get("snapshot") if isinstance(state, dict) else None
+        if not isinstance(snapshot, dict) or snapshot.get("protocol-version") != 3:
+            raise TendTransportError("Native Tend protocol 3 required", "incompatible-protocol")
+    else:
+        ship = scry_whoami(opener, base_url)
+        state = json_request(opener, base_url + "/~/scry/tend/state.json")
+        validate_snapshot_protocol(state)
     save_cookie_jar(jar, cookie_path)
     write_connection(config_path, base_url, ship)
     return {
         "status": "ok",
         "baseUrl": base_url,
         "ship": ship,
-        "protocolVersion": PROTOCOL_VERSION,
+        "protocolVersion": 3 if native else PROTOCOL_VERSION,
         "localTimezone": local_timezone_name(),
     }
 
@@ -767,6 +777,63 @@ def poke(config_path: Path, cookie_path: Path, action: object) -> dict[str, obje
             pass
     raise TendTransportError("The poke channel closed before Eyre acknowledged the action")
 
+
+
+NATIVE_API = "/apps/tend/api/v1/"
+
+
+def native_read(config_path: Path, cookie_path: Path, resource: str = "state") -> object:
+    """Read the native preview without probing or falling back to a Gall agent."""
+    if resource not in {"state", "private", "whoami"} and not re.fullmatch(r"receipt/[A-Za-z0-9._~%+-]+", resource):
+        raise TendTransportError("Invalid native resource")
+    connection = read_connection(config_path)
+    opener, _ = opener_for(cookie_path)
+    result = json_request(opener, connection["baseUrl"] + NATIVE_API + resource)
+    if resource == "state":
+        snapshot = result.get("snapshot") if isinstance(result, dict) else None
+        if not isinstance(snapshot, dict) or snapshot.get("protocol-version") != 3:
+            raise TendTransportError("Native Tend protocol 3 required", "incompatible-protocol")
+    return result
+
+
+def validate_native_receipt(value: object, operation_id: str) -> dict[str, object]:
+    if (not isinstance(value, dict) or value.get("protocol") != "tend-native-1"
+            or value.get("operation-id") != operation_id
+            or value.get("outcome") not in {"committed", "rejected"}):
+        raise TendTransportError(
+            f"Native operation {operation_id} is uncertain; retain its original ID",
+            "uncertain-operation",
+        )
+    return value
+
+
+def native_command(config_path: Path, cookie_path: Path, command: object) -> dict[str, object]:
+    """Submit exactly once. HTTP acceptance alone never means committed."""
+    if not isinstance(command, dict):
+        raise TendTransportError("A native command must be a JSON object")
+    command = copy.deepcopy(command)
+    if command.get("kind") == "edit":
+        action = command.get("action")
+        if not isinstance(action, dict) or len(action) != 1 or not isinstance(next(iter(action.values())), dict):
+            raise TendTransportError("A native edit requires one action")
+        command["action"] = normalize_tend_action(action)
+        operation_id = next(iter(action.values())).get("operation-id")
+    else:
+        operation_id = command.get("operation-id")
+    if not isinstance(operation_id, str) or not operation_id or len(operation_id.encode()) > 256:
+        raise TendTransportError("A native command requires its original operation ID")
+    if len(json.dumps(command, separators=(",", ":")).encode()) > MAX_ACTION_BYTES:
+        raise TendTransportError("Native command exceeds 1 MiB", "request-too-large")
+    connection = read_connection(config_path)
+    opener, _ = opener_for(cookie_path)
+    try:
+        result = json_request(opener, connection["baseUrl"] + NATIVE_API + "command", method="POST", payload=command)
+    except (OSError, TimeoutError) as error:
+        raise TendTransportError(
+            f"Native operation {operation_id} is uncertain; read its receipt before any resubmission",
+            "uncertain-operation",
+        ) from error
+    return validate_native_receipt(result, operation_id)
 
 def parser() -> argparse.ArgumentParser:
     root = argparse.ArgumentParser(description=__doc__)

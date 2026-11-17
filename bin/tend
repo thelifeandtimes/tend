@@ -754,6 +754,21 @@ def print_rows(rows: list[dict[str, object]], as_json: bool) -> None:
 def run_tend(args: argparse.Namespace) -> int:
     cookie_path, config_path = default_paths()
     as_json = args.json
+    if args.tend_command == "native":
+        if args.native_command == "connect":
+            code = sys.stdin.readline().strip() if not sys.stdin.isatty() else getpass.getpass("Urbit +code: ")
+            emit(transport.login(args.url, cookie_path, config_path, code, native=True), True)
+            return 0
+        if args.native_command == "command":
+            value = json.loads(args.payload)
+            result = transport.native_command(config_path, cookie_path, value)
+            emit(result, True)
+            return 0 if result["outcome"] == "committed" else 1
+        resource = args.native_command
+        if resource == "receipt":
+            resource += "/" + urllib.parse.quote(args.operation_id, safe="")
+        emit(transport.native_read(config_path, cookie_path, resource), True)
+        return 0
     if args.tend_command == "connect":
         code = sys.stdin.readline().strip() if not sys.stdin.isatty() else getpass.getpass("Urbit +code: ")
         emit(transport.login(args.url, cookie_path, config_path, code), as_json)
@@ -1203,6 +1218,17 @@ def parser() -> argparse.ArgumentParser:
     root.add_argument("--version", action="version", version=f"%(prog)s {VERSION}")
     root.add_argument("--json", action="store_true", help="emit machine-readable JSON")
     commands = root.add_subparsers(dest="tend_command", required=True)
+
+    native = commands.add_parser("native", help="use the Grubbery-native preview API (no Gall fallback)")
+    native_commands = native.add_subparsers(dest="native_command", required=True)
+    for resource in ("state", "private", "whoami"):
+        native_commands.add_parser(resource)
+    native_connect = native_commands.add_parser("connect")
+    native_connect.add_argument("url")
+    native_receipt = native_commands.add_parser("receipt")
+    native_receipt.add_argument("operation_id")
+    native_command = native_commands.add_parser("command")
+    native_command.add_argument("payload", help="native JSON command with a caller-owned operation ID")
 
     connect = commands.add_parser("connect", help="authenticate to an Eyre endpoint")
     connect.add_argument("url")
