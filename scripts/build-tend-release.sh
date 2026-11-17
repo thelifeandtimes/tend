@@ -19,7 +19,7 @@ mkdir -p "$release_dir"
 # Stage new files before packaging; tracked edits are read from the working tree.
 git -C "$repo_dir" ls-files -z -- \
   .gitignore AGENTS.md Makefile PRODUCT_ARCHITECTURE_PLAN.md README.md VERSION \
-  bin desk docs mobile omarchy-plugin packaging scripts skills tests \
+  bin code desk dev/grubbery docs mobile omarchy-plugin packaging scripts skills tests \
   | tar -C "$repo_dir" --null --verbatim-files-from --no-recursion -T - -cf - \
   | tar -C "$release_dir" -xf -
 cp "$repo_dir/packaging/tend/install.sh" "$release_dir/install.sh"

@@ -1,4 +1,4 @@
-.PHONY: check check-all check-tend check-tend-release check-tend-migrations \
+.PHONY: check check-all check-tend check-tend-native check-tend-release check-tend-migrations \
 	check-tend-multiship check-mobile \
 	dist-tend test test-js \
 	validate-plugin lint-qml lint-python
@@ -9,7 +9,10 @@ check: check-tend
 
 check-all: check-tend check-mobile
 
-check-tend: validate-plugin lint-qml lint-python test
+check-tend: validate-plugin lint-qml lint-python check-tend-native test
+
+check-tend-native:
+	python3 scripts/check-tend-native.py
 
 check-mobile:
 	cd mobile && ./gradlew :shared:jvmTest :androidApp:lintDebug :androidApp:assembleDebug

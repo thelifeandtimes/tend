@@ -63,7 +63,9 @@ for source_path in mobile/gradlew mobile/gradle/wrapper/gradle-wrapper.jar \
   mobile/shared/build.gradle.kts mobile/androidApp/build.gradle.kts \
   mobile/tools/fixture_ship.py mobile/tools/serve_artifacts.py \
   tests/test_tend_cli.py tests/test_tend_web_theme.js Makefile AGENTS.md \
-  packaging/tend/install.sh scripts/build-tend-release.sh docs/TEND_THEMES.md
+  packaging/tend/install.sh scripts/build-tend-release.sh docs/TEND_THEMES.md \
+  code/bill.json code/version.json code/nex/tend/app.hoon code/lib/tend-native.hoon \
+  dev/grubbery/dependencies.json docs/TEND_GRUBBERY.md
 do
   [[ -f "$release_dir/$source_path" ]] || { echo "Missing product source: $source_path" >&2; exit 1; }
 done
@@ -74,7 +76,7 @@ if find "$release_dir/mobile" \
   echo "Private/generated mobile files entered the release" >&2
   exit 1
 fi
-(cd "$release_dir" && make test)
+(cd "$release_dir" && make check-tend-native test)
 
 for desk_dependency in \
   desk.docket-0 \

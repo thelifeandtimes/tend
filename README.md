@@ -16,6 +16,13 @@ account, database, analytics service, or mandatory notification relay.
 > and CLI on compatible versions. Review the plugin source before enabling it;
 > Omarchy plugins execute inside the shell process.
 
+## Grubbery-native translation branch
+
+The native preview source is in `code/`. See [the implementation and remaining
+parity work](docs/TEND_GRUBBERY.md) and [development/distribution evidence](docs/TEND_GRUBBERY_DEVELOPMENT.md).
+It is source-pinned but **has not compiled on Grubbery or passed distribution
+acceptance**. The existing installation below remains the established Gall build.
+
 ## Quick installation
 
 ### 1. Install the Gall agent

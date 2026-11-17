@@ -1,0 +1,35 @@
+{
+  "checkedAt": "2026-11-17",
+  "qualification": "Source-pinned candidate; native Hoon build and app distribution NOT qualified",
+  "authority": {
+    "repository": "https://github.com/nisfeb/lattice.git",
+    "commit": "5f081b4450acbbffa914c6e318e8dde784841341",
+    "workflow": ".github/workflows/ci.yml",
+    "workflowSha256": "832d5b94c1c05ddabbb19de1f8c764942b75877e23063e126d1b7896dd1ad8db"
+  },
+  "grubbery": {
+    "repository": "https://github.com/nisfeb/grubbery.git",
+    "ref": "dist/single-release",
+    "commit": "7f7701d546ce115eea5f37f66465b362cb121774",
+    "license": "MIT",
+    "archiveSha256": "764358e241fa14bf519ccccc4738291148756d643b05601ee888184302f0546c"
+  },
+  "runtime": {
+    "version": "4.6-5a7614f",
+    "commit": "5a7614f69bbc783736b08965fdc0a2534bb42e82",
+    "image": "docker.io/tloncorp/vere@sha256:47fbcf0710ded939931ce3c6408864cee5e8848c5765da0b51a90ca0b1ab1afd",
+    "platform": "linux/amd64"
+  },
+  "pill": {
+    "url": "https://bootstrap.urbit.org/urbit-v4.6.pill?generation=1790171686269740",
+    "sha256": "f8b08c53dd6d0aa9c4f7654f0a7bcd11e94089222888a3c99c0a10eedcbb377b",
+    "bytes": 217421172,
+    "baseKelvin": [
+      "zuse",
+      408
+    ]
+  },
+  "nativeProtocol": "tend-native-1",
+  "snapshotProtocol": 3,
+  "savedSchema": 1
+}
