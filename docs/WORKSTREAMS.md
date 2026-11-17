@@ -31,3 +31,11 @@ Theme sync reads the existing `%settings` contract; it does not depend on a loca
 theme plugin at runtime. Future host-manager discovery/onboarding must use a
 documented interface, not files internal to another repository. Pals, messenger,
 and ship orchestration are not Tend components.
+
+## Grubbery-native branch
+
+`code/` contains a fresh nexus candidate, independent of the established Gall
+installation. Native compilation/distribution is blocked by the installed
+Omabit runner's missing `app-development-policy-v2` capability. It is not yet the
+default product backend. See `TEND_GRUBBERY.md` for implemented source and pending
+client/collaboration parity, and `TEND_GRUBBERY_DEVELOPMENT.md` for actual evidence.

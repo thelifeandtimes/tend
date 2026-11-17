@@ -116,7 +116,26 @@ first attempt to stop the next member while ~zod's stop was queued was refused
 with `project_operation_pending`. No effect occurred for that refusal. The same
 original request ID was submitted only after ~zod's saved stop had succeeded.
 Piers and project identities were retained; there was no destructive cleanup.
-Final lifecycle observations are recorded below after completion.
+A fresh public runner snapshot at **2026-11-17T22:35:45Z** reported
+`desired_state: stopped` and `observed_state: stopped` for all three members
+(`health: unknown`). Their public stop receipts succeeded:
+
+| Member | Stop receipt |
+| --- | --- |
+| `tend-grub-zod` | `op-caa60538a0ad40afa348b28e7bb194ae` |
+| `tend-grub-nec` | `op-50463ada4a35bb8d9267bfc7e4df5919` |
+| `tend-grub-bud` | `op-925d38ba10365998365b39f1efdba599` |
+
+The separate formal exit observations for ~zod
+(`op-b23ecf159d6fd00b1ffedc84c0fd102f`, request
+`tend-grub-20261117-exit-zod`) and ~nec
+(`op-cd35df6f2297eddb68062b48e488f08e`, request
+`tend-grub-20261117-exit-nec`) were recorded **interrupted**. The public status
+response supplied no further reason. They were not retried, adopted, retired or
+replaced, and no third exit observation was attempted. These exact receipts need
+reconciliation before a future lifecycle continuation. Snapshot-observed stopped
+state is not a successful formal exit qualification. The project network/anchor
+and retained piers were not destroyed.
 
 ## Distribution acceptance matrix
 
@@ -154,6 +173,8 @@ remote hosting or public-network reliability.
 - Seven native Python transport tests: matching receipt, rejection, incompatible
   snapshots, missing IDs, route confinement and lost replies without mutation
   replay. They mock the HTTP boundary; they do not emulate or compile Grubbery.
+- Three native preview web tests pass in a Node VM: form input handling, logical
+  task references and retained uncertain commands. No browser/device render claim.
 - Three added Kotlin native transport tests pass as part of the shared JVM suite.
   That suite reports 46 tests, one opt-in live test skipped, zero failures/errors.
 - `make check-tend` passes with fixture loopback access enabled. Its 132 Python
@@ -166,8 +187,9 @@ remote hosting or public-network reliability.
 - Native Hoon assertions are authored in `code/lib/tend-native-tests.hoon`: CRUD,
   actor authority, deduplication/ID reuse, local transfer, timer re-entry, private
   additions after revocation/deletion and saved-noun recovery. **Not executed.**
-- Deterministic release/build checks are recorded after the final staged source.
-  Including native source in the archive does not make it deployable/qualified.
+- `make dist-tend` and `make check-tend-release` pass: deterministic archive,
+  checksums, extracted-source tests and isolated installer checks. Including native
+  source in that archive does not make the native app deployable/qualified.
 
 ## Reusable findings for Grubbin
 

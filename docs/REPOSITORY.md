@@ -5,6 +5,8 @@ Integration branch: `master`. Sourcebox checkout: `~/repos/tend`.
 
 ## Source map
 
+- `code/`: unqualified fresh Grubbery-native app candidate; see `TEND_GRUBBERY.md`.
+- `dev/grubbery/`: pinned native framework/runtime provenance; no runtime data.
 - `desk/`: `%tend` Gall agent, marks, libraries, migrations, and browser UI.
 - `omarchy-plugin/`: panel, menubar widget, service, and Eyre transport.
 - `bin/tend`: standalone command-line client; uses the bundled/installed transport.
